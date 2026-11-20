@@ -1,0 +1,44 @@
+{
+  "npm.scriptRunner": "vp",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "oxc.disableNestedConfig": true,
+  "oxc.fmt.disableNestedConfig": true,
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.oxc": "explicit"
+  },
+  "flow-icons.folders.associations": {
+    ".vite-hooks": "hook",
+    "cli": "console",
+    "lexer": "syntax",
+    "ast": "codegraph",
+    "check": "validation",
+    "diagnostics": "warning",
+    "eval": "calculator",
+    "opt": "rocket",
+    "hir": "sequence",
+    "ir": "sequence",
+    "lower": "transfer",
+    "emit": "export",
+    "smf": "disc",
+    "unit": "test",
+    "property": "test",
+    "golden": "diff"
+  },
+  "flow-icons.files.associations": {
+    "*.clef": "audio"
+  }
+}

@@ -1,0 +1,13 @@
+// 파헬벨의 카논(D장조)을 단순화한 예제.
+// 베이스가 4마디짜리 진행을 반복하고, 같은 선율이 2마디 간격으로 겹쳐 들어온다.
+time 4/4
+key D
+tempo 66
+
+ground = D3:2 A2:2 B2:2 F#2:2 G2:2 D2:2 G2:2 A2:2
+theme  = F#5:2 E5:2 D5:2 C#5:2 B4:2 A4:2 B4:2 C#5:2
+
+track cello  = ground*3
+track violin = _:8 theme theme
+track flute  = _:16 theme
+track piano  = _:24 (theme - 7d)

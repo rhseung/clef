@@ -1,0 +1,36 @@
+{
+  "name": "clef",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "tsc && vp build",
+    "preview": "vp preview",
+    "prepare": "vp config",
+    "clef": "vpx src/cli/main.ts"
+  },
+  "dependencies": {
+    "@codemirror/lint": "^6.9.8",
+    "@tonejs/midi": "^2.0.28",
+    "codemirror": "^6.0.2",
+    "es-toolkit": "^1.53.2",
+    "picocolors": "^1.1.1",
+    "tone": "^15.1.22",
+    "ts-pattern": "^5.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "fast-check": "^4.10.3",
+    "typescript": "~7.0.2",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.21.0",
+      "onFail": "download"
+    }
+  }
+}
