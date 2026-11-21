@@ -23,6 +23,8 @@
   "flow-icons.folders.associations": {
     ".vite-hooks": "hook",
     "cli": "console",
+    "automata": "flow",
+    "grammar": "rules",
     "lexer": "syntax",
     "ast": "codegraph",
     "check": "validation",
