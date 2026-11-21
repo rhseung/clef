@@ -4,7 +4,7 @@ Nov 16, 2026 @류현승
 
 ## 개요
 
-이 프로젝트는 악보를 코드로 작성하는 작은 언어와, 그 코드를 컴파일 단계에서 검사해 MIDI 이벤트에 대응하는 중간 표현으로 바꾸는 컴파일러를 만든다. 언어 이름은 아직 정하지 않았다.
+이 프로젝트는 악보를 코드로 작성하는 작은 언어와, 그 코드를 컴파일 단계에서 검사해 MIDI 이벤트에 대응하는 중간 표현으로 바꾸는 컴파일러를 만든다. 언어 이름은 Clef이다.
 
 ### 목표와 범위
 
@@ -12,7 +12,7 @@ Nov 16, 2026 @류현승
 - 타깃은 틱 기반 이벤트 중간 표현이다. 이벤트 하나는 (tick, channel, pitch, duration)이고, Standard MIDI File의 음 이벤트와 일대일로 대응한다.
 - 컴파일러는 렉서, 파서, AST, 의미 분석, 중간 표현 생성, 최적화까지 구현한다. 기계어 생성은 하지 않는다.
 - 중간 표현을 SMF 파일로 쓰는 출력기는 선택 사항이다.
-- 구현 언어는 정하지 않았다. 이 문서는 언어에 의존하지 않는 형태로 자료구조를 기술한다.
+- 구현 언어는 TypeScript이다. 이 문서는 언어에 의존하지 않는 형태로 자료구조를 기술한다.
 
 ### 핵심 아이디어
 
@@ -27,15 +27,15 @@ Nov 16, 2026 @류현승
 
 ### 평가 기준과의 대응
 
-| 항목                      | 배점 | 이 프로젝트에서 담당하는 부분                                                 |
-| ------------------------- | ---- | ----------------------------------------------------------------------------- |
-| Good idea                 | 2    | 악보의 정적 검증이라는 도메인 특화 의미 분석                                  |
-| Good practices for coding | 2    | 단계별 모듈 분리, 공통 진단 모듈, 단계별 출력 옵션                            |
-| Lexer                     | 10   | 음 토큰과 이름 토큰의 구분, 길이와 음정 리터럴, 주석, 렉서 오류               |
-| Parser                    | 10   | 공백 연결 문법, 연산자 우선순위, 줄 단위 오류 복구                            |
-| Semantic                  | 20   | 타입 검사, 조성 의존 이조, 시간 계산, 음역, 이름 해석, 정적 평가, 붙임줄 검사 |
-| Error handling            | 10   | 오류 코드, 줄과 열 위치, 이름 제안, 한 번에 여러 오류 보고, 경고              |
-| Presentation              | 10   | 단계별 출력 옵션으로 각 단계의 결과를 그대로 시연                             |
+| 항목                      | 배점 | 이 프로젝트에서 담당하는 부분                                                                                                                |
+| ------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Good idea                 | 2    | 악보의 정적 검증이라는 도메인 특화 의미 분석                                                                                                 |
+| Good practices for coding | 2    | 단계별 모듈 분리, 공통 진단 모듈, 단계별 출력 옵션                                                                                           |
+| Lexer                     | 10   | 토큰 규칙을 정규식으로 적고 Thompson 구성과 부분집합 구성으로 만든 DFA 렉서, 음 토큰과 이름 토큰의 구분, 길이와 음정 리터럴, 주석, 렉서 오류 |
+| Parser                    | 10   | 직접 만든 LALR(1) 표 생성기와 LR 파서, 공백 연결 문법, 연산자 우선순위, 줄 단위 오류 복구                                                    |
+| Semantic                  | 20   | 타입 검사, 조성 의존 이조, 시간 계산, 음역, 이름 해석, 정적 평가, 붙임줄 검사                                                                |
+| Error handling            | 10   | 오류 코드, 줄과 열 위치, 이름 제안, 한 번에 여러 오류 보고, 경고                                                                             |
+| Presentation              | 10   | 단계별 출력 옵션으로 각 단계의 결과를 그대로 시연                                                                                            |
 
 ## 어휘 규칙
 
@@ -70,20 +70,22 @@ INTERVAL의 `d`는 온음계 계단(diatonic step) 수이고 `st`는 반음(semi
 7. `/`와 `:`는 문맥과 상관없이 SLASH, COLON 토큰이다. `time 4/4`의 박자표와 `C4:3/2`의 길이 표기는 파서가 구분한다.
 8. 공백과 탭은 토큰을 나눠 주지만 토큰 사이에 연결 연산이 숨어 있다. IDENT 두 개는 반드시 공백으로 띄어 써야 한다. `m1m1`은 하나의 IDENT이다.
 9. `//`부터 줄 끝까지는 주석이고 토큰을 만들지 않는다.
-10. NEWLINE은 문장의 끝을 뜻한다. `(` 또는 `[` 안에서는 NEWLINE을 만들지 않고, 연속된 줄바꿈은 하나로 합친다.
+10. NEWLINE은 문장의 끝을 뜻한다. `(` 또는 `[` 안에서는 NEWLINE을 만들지 않고, 연속된 줄바꿈은 하나로 합친다. 파일 맨 앞의 줄바꿈과 NEWLINE 바로 뒤의 줄바꿈은 건너뛴다. 입력의 마지막이 NEWLINE이 아니면 EOF 앞에 NEWLINE을 하나 넣는다. 이 NEWLINE은 괄호가 열려 있어도 낸다. 빈 입력은 EOF만 낸다.
 11. 위치는 줄과 열 모두 1부터 세고, 열은 문자 단위로 센다. 탭도 1열이다.
+12. 정수 리터럴은 0 이상 2^53 - 1 이하이다. 이보다 크면 E004이고 그 토큰은 버린다.
+13. 어느 규칙에도 맞지 않는 글자, H부터 Z로 시작하는 대문자 단어, `_a`처럼 `_` 뒤에 식별자 문자가 붙은 것은 E001이다. 오류가 난 부분은 버리고 다음 글자부터 계속 읽는다.
 
 ### 구분 예시
 
-| 입력          | 토큰                              |
-| ------------- | --------------------------------- |
-| `C#4`         | NOTE(C, #, 4)                     |
-| `c4`          | IDENT(c4)                         |
-| `key C minor` | KW\_KEY, PITCHCLASS(C), KW\_MINOR |
-| `m1+2d`       | IDENT(m1), PLUS, INTERVAL(2, d)   |
-| `E4:2~`       | NOTE(E, 4), COLON, INT(2), TIE    |
-| `C10`         | E002, 옥타브는 한 자리            |
-| `2x`          | E003, 잘못된 음정 표기            |
+| 입력          | 토큰                            |
+| ------------- | ------------------------------- |
+| `C#4`         | NOTE(C, #, 4)                   |
+| `c4`          | IDENT(c4)                       |
+| `key C minor` | KW_KEY, PITCHCLASS(C), KW_MINOR |
+| `m1+2d`       | IDENT(m1), PLUS, INTERVAL(2, d) |
+| `E4:2~`       | NOTE(E, 4), COLON, INT(2), TIE  |
+| `C10`         | E002, 옥타브는 한 자리          |
+| `2x`          | E003, 잘못된 음정 표기          |
 
 ### 토큰 자료구조
 
@@ -96,11 +98,11 @@ Token {
 }
 ```
 
-렉서 오류는 E001(알 수 없는 문자), E002(잘못된 음 표기), E003(잘못된 음정 표기)이다. 렉서는 오류를 보고한 뒤 해당 문자를 건너뛰고 스캔을 계속한다.
+렉서 오류는 E001(알 수 없는 문자), E002(잘못된 음 표기), E003(잘못된 음정 표기), E004(너무 큰 정수 리터럴)이다. 렉서는 오류를 보고한 뒤 해당 문자를 건너뛰고 스캔을 계속한다.
 
 ## 문법
 
-프로그램은 헤더와 문장으로 구성되고, 식에서 연결 연산이 공백으로 표현된다는 점이 파서의 핵심이다. 파서는 재귀 하강으로 구현하는 것을 가정하고 문법을 정했다.
+프로그램은 헤더와 문장으로 구성되고, 식에서 연결 연산이 공백으로 표현된다는 점이 파서의 핵심이다. 파서는 LALR(1) 표를 쓰는 LR 파서로 구현한다. 아래 EBNF를 BNF로 풀어 쓴 문법이 파서 생성기의 입력이다.
 
 ### EBNF
 
@@ -135,6 +137,47 @@ atom      = NOTE [ length ] [ TIE ]
 length    = ":" ( INT | "/" INT | INT "/" INT )
 ```
 
+### BNF
+
+EBNF의 반복과 선택을 풀어 쓰고, 한 줄을 한 단위로 보도록 바꾼 문법이다. 대문자는 터미널이고 첫 글자만 대문자인 이름은 논터미널이다. `ε`은 빈 생산이다. 터미널 이름은 토큰 종류와 같고 `CALL_LP`만 예외이다. 이는 아래 파싱 방법에서 설명한다.
+
+```
+Program   -> Lines
+Lines     -> Lines Line | ε
+Line      -> Header NEWLINE | Stmt NEWLINE | ERROR NEWLINE
+
+Header    -> KW_TIME INT SLASH INT
+           | KW_KEY PITCHCLASS | KW_KEY PITCHCLASS KW_MAJOR | KW_KEY PITCHCLASS KW_MINOR
+           | KW_TEMPO INT
+           | KW_UNIT INT SLASH INT
+
+Stmt      -> IDENT EQ Expr
+           | KW_DEF IDENT Lp Params RPAREN COLON Type EQ Expr
+           | KW_TRACK IDENT EQ Expr
+Lp        -> LPAREN | CALL_LP
+Params    -> ε | ParamList
+ParamList -> Param | ParamList COMMA Param
+Param     -> IDENT COLON Type
+Type      -> KW_NOTE | KW_INTERVAL | KW_PHRASE | KW_INT
+
+Expr      -> Par
+Par       -> Par AMP Seq | Seq
+Seq       -> Seq Item | Item
+Item      -> BAR | Post
+Post      -> Post PLUS Atom | Post MINUS Atom | Post STAR Atom | Atom
+Atom      -> NOTE | NOTE Length | NOTE TIE | NOTE Length TIE
+           | REST | REST Length
+           | IDENT | IDENT CALL_LP Args RPAREN
+           | INT | INTERVAL
+           | LPAREN Expr RPAREN
+           | LBRACKET Expr RBRACKET Length
+Length    -> COLON INT | COLON SLASH INT | COLON INT SLASH INT
+Args      -> ε | ArgList
+ArgList   -> Expr | ArgList COMMA Expr
+```
+
+`ERROR`는 렉서가 내지 않는 가상 터미널이고 오류 복구에만 쓴다. 이 문법은 LALR(1)이며 충돌이 없다. 우선순위는 `Par`, `Seq`, `Post`, `Atom`의 계층으로 문법에 들어 있다.
+
 ### 연산자 우선순위
 
 높은 것부터 나열한다.
@@ -159,11 +202,13 @@ length    = ":" ( INT | "/" INT | INT "/" INT )
 
 ### 파싱 방법
 
-한 개의 앞참조 토큰으로 결정하는 재귀 하강 파서로 충분하다.
+LALR(1) 표를 쓰는 LR 파서이다. 표는 위 BNF로 LR(1) 항목 집합을 만들고 core가 같은 상태를 합쳐 얻는다. 생성기를 쓰지 않고 직접 만든다.
 
-- `item`의 시작 토큰 집합은 BAR, NOTE, REST, IDENT, INT, INTERVAL, `(`, `[`이다. `seq`는 이 집합에 속하는 토큰이 오는 동안 항목을 계속 읽는다.
-- `seq`가 끝나는 토큰은 NEWLINE, EOF, `&`, `)`, `]`, `,`이다.
-- 함수 호출과 괄호 묶음은 다음 토큰만으로는 구분할 수 없다. `m1 (m1+2d)`는 두 항목의 연결이고 `f(m1)`는 호출이다. 따라서 토큰에 `spaceBefore`(바로 앞에 공백이 있었는지) 필드가 필요하다. IDENT 바로 뒤의 `(`에 `spaceBefore`가 없을 때만 호출로 본다.
+- `item`의 시작 토큰 집합은 BAR, NOTE, REST, IDENT, INT, INTERVAL, `(`, `[`이다. `seq`가 끝나는 토큰은 NEWLINE, EOF, `&`, `)`, `]`, `,`이다.
+- 함수 호출과 괄호 묶음은 다음 토큰만으로는 구분할 수 없다. `m1 (m1+2d)`는 두 항목의 연결이고 `f(m1)`는 호출이다. 따라서 토큰에 `spaceBefore`(바로 앞에 공백이 있었는지) 필드가 필요하다. 렉서는 두 경우 모두 LPAREN을 낸다. 파서가 터미널을 고를 때 IDENT 바로 뒤에 있고 `spaceBefore`가 없는 `(`만 `CALL_LP`로 바꿔 읽는다.
+- 헤더가 문장보다 앞에 와야 한다는 규칙은 문법이 아니라 `Line` 생산을 줄이는 시점의 동작에서 검사한다. 위반하면 E010을 보고하고 그 줄을 버린다. 헤더 구간과 문장 구간을 문법에서 나누면 오류 복구용 생산과 충돌하기 때문이다.
+- 오류 복구는 `Line -> ERROR NEWLINE` 생산과 패닉 모드이다. 오류를 만나면 스택에서 `ERROR`를 받을 수 있는 상태까지 팝하고, 입력에서 NEWLINE을 만날 때까지 토큰을 버린 뒤 다음 줄부터 다시 파싱한다.
+- E011은 마지막 NEWLINE 또는 EOF에서 구문 오류가 났고 열린 괄호가 남아 있을 때 보고한다. 위치는 가장 안쪽에서 열린 괄호이다. 닫히지 않은 괄호 뒤의 줄은 모두 그 괄호 안으로 들어가므로 그 뒤 문장의 오류는 보고되지 않는다.
 
 ### 파싱 예시
 
@@ -686,7 +731,7 @@ example.sc:1:18: error[E201]: operator '+' is not defined for (Note, Note)
 
 - 오류가 하나라도 있으면 종료 코드 1을 반환하고 LIR을 만들지 않는다. 경고만 있으면 종료 코드 0이다.
 - 모든 진단은 출력 전에 (줄, 열) 오름차순으로 정렬한다. 같은 입력의 출력이 항상 같아야 테스트할 수 있다.
-- 진단은 최대 50개까지만 출력하고, 그 이후에는 `too many errors`를 출력한다.
+- 진단(오류와 경고)은 정렬한 뒤 앞의 50개까지만 출력하고, 넘치면 마지막 줄에 `too many errors`를 출력한다.
 
 ### 오류 코드표
 
@@ -697,6 +742,7 @@ example.sc:1:18: error[E201]: operator '+' is not defined for (Note, Note)
 | E001 | 렉서        | 알 수 없는 문자                                                | 그 문자                          |
 | E002 | 렉서, 파서  | 잘못된 음 표기(옥타브 없음, 두 자리 옥타브)                    | 토큰 시작                        |
 | E003 | 렉서        | 잘못된 음정 표기                                               | 토큰 시작                        |
+| E004 | 렉서        | 정수 리터럴이 너무 큼(2^53 - 1 초과)                           | 토큰 시작                        |
 | E010 | 파서        | 예상하지 못한 토큰                                             | 그 토큰(줄 끝이면 줄 끝 다음 열) |
 | E011 | 파서        | 닫히지 않은 괄호                                               | 여는 괄호                        |
 | E101 | 이름 해석   | 정의되지 않은 이름                                             | 그 이름                          |
@@ -885,7 +931,7 @@ track piano = m2
 # 기대 출력
 1:1 warning[W601]: 'm1' is defined but never used
 2:15 error[E101]: undefined name 'm2'
-     help: did you mean 'm1'?
+	help: did you mean 'm1'?
 
 # 입력
 time 4/4
@@ -905,13 +951,13 @@ track piano = m1
 track pino = C4:4
 # 기대 출력
 1:7 error[E104]: unknown instrument 'pino'
-     help: did you mean 'piano'?
+	help: did you mean 'piano'?
 
 # 입력
 track piano = C4 + C4
 # 기대 출력
 1:18 error[E201]: operator '+' is not defined for (Note, Note)
-     help: expected (Note + Interval) or (Phrase + Interval)
+	help: expected (Note + Interval) or (Phrase + Interval)
 
 # 입력
 track piano = C4 2d
