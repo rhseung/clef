@@ -27,15 +27,52 @@ Nov 16, 2026 @류현승
 
 ### 평가 기준과의 대응
 
-| 항목                      | 배점 | 이 프로젝트에서 담당하는 부분                                                                                                                |
-| ------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Good idea                 | 2    | 악보의 정적 검증이라는 도메인 특화 의미 분석                                                                                                 |
-| Good practices for coding | 2    | 단계별 모듈 분리, 공통 진단 모듈, 단계별 출력 옵션                                                                                           |
-| Lexer                     | 10   | 토큰 규칙을 정규식으로 적고 Thompson 구성과 부분집합 구성으로 만든 DFA 렉서, 음 토큰과 이름 토큰의 구분, 길이와 음정 리터럴, 주석, 렉서 오류 |
-| Parser                    | 10   | 직접 만든 LALR(1) 표 생성기와 LR 파서, 공백 연결 문법, 연산자 우선순위, 줄 단위 오류 복구                                                    |
-| Semantic                  | 20   | 타입 검사, 조성 의존 이조, 시간 계산, 음역, 이름 해석, 정적 평가, 붙임줄 검사                                                                |
-| Error handling            | 10   | 오류 코드, 줄과 열 위치, 이름 제안, 한 번에 여러 오류 보고, 경고                                                                             |
-| Presentation              | 10   | 단계별 출력 옵션으로 각 단계의 결과를 그대로 시연                                                                                            |
+기준은 EC3204 2026 가을학기의 성적표(Grading Sheet)와 데모 체크리스트(Demo Checklist)이다. 총점은 100점이고 보너스가 10점까지 따로 있다. 마지막 push 기한은 12월 6일이다.
+
+| 항목           | 배점 | 이 프로젝트에서 담당하는 부분                                                        |
+| -------------- | ---- | ------------------------------------------------------------------------------------ |
+| Conform (자동) | 5    | `run.sh`의 명령 형식과 종료 코드                                                     |
+| Lexer          | 10   | 정규식에서 만든 DFA 렉서, 토큰마다 종류, 원문, 줄, 열                                |
+| Parser         | 15   | 직접 만든 LALR(1) 표 생성기와 LR 파서, 파스 트리로 보이는 연산자 우선순위            |
+| Semantics      | 20   | 타입 검사, 조성 의존 이조, 시간 계산, 음역, 이름 해석, 붙임줄 검사, `docs/errors.md` |
+| IR             | 20   | 이름과 호출이 사라지고 유리수 시간이 정수 틱이 되는 중간 표현, 최적화                |
+| Modularity     | 10   | 단계별 모듈 분리, dead code 없음                                                     |
+| Testing        | 8    | 골든, 속성 테스트, 빈 파일과 깨진 파일의 견고성 테스트                               |
+| AI usage       | 7    | `docs/AI_USAGE.md`와 구술 질문                                                       |
+| Creative       | 5    | 악보의 정적 검증이라는 도메인 특화 의미 분석                                         |
+| Bonus          | 10   | 기준이 공개되지 않았다. 실행되는 back end(SMF 출력)는 가산점이 있을 수 있다          |
+
+## 실행 규약
+
+모든 팀이 같은 명령을 쓴다. 채점자가 직접 만든 파일을 현장에서 주므로 이 규약이 다른 절보다 우선한다.
+
+```
+./run.sh --phase lex   myfile.src
+./run.sh --phase parse myfile.src
+./run.sh --phase sema  myfile.src
+./run.sh --phase ir    myfile.src
+```
+
+| 상황                                              | 종료 코드 | 출력                                                                         |
+| ------------------------------------------------- | --------- | ---------------------------------------------------------------------------- |
+| 올바른 프로그램(경고만 있어도)                    | 0         | 표준 출력에 단계의 결과, 표준 에러에 경고                                    |
+| 잘못된 프로그램, 읽을 수 없는 파일, 잘못된 사용법 | 2         | 표준 에러에 진단. 표준 출력에는 아무것도 쓰지 않는다                         |
+| 컴파일러 자체의 고장                              | 1         | `clef: internal compiler error: <메시지>` 한 줄. 스택 트레이스를 내지 않는다 |
+
+- 결과와 진단 말고는 아무것도 출력하지 않는다.
+- 파일 확장자는 검사하지 않는다. `.src`든 `.clef`든 읽는다.
+- 빈 파일, 임의의 바이트, 아주 깊은 중첩에도 종료 코드 1이 나오면 안 된다.
+
+| `--phase` | 실행하는 단계 | 성공할 때의 출력                                                              |
+| --------- | ------------- | ----------------------------------------------------------------------------- |
+| `lex`     | 1             | 토큰 목록                                                                     |
+| `parse`   | 1 ~ 2         | 파스 트리                                                                     |
+| `sema`    | 1 ~ 7         | 이름과 타입 목록(4단계의 `typed`). 6단계의 오류(E3xx, E4xx)도 여기에서 나온다 |
+| `ir`      | 1 ~ 8         | LIR. 헤더 줄을 포함한다                                                       |
+
+`sema`가 평가 단계까지 도는 이유는 마디 길이, 음역, 붙임줄 같은 의미 오류를 평가기가 찾기 때문이다.
+
+시연용 선택 옵션은 `--emit ast|ast-opt|hir|hir-opt`(`--phase` 대신 내부 단계를 본다), `-O0`, `-o <출력.mid>`이다.
 
 ## 어휘 규칙
 
@@ -70,10 +107,11 @@ INTERVAL의 `d`는 온음계 계단(diatonic step) 수이고 `st`는 반음(semi
 7. `/`와 `:`는 문맥과 상관없이 SLASH, COLON 토큰이다. `time 4/4`의 박자표와 `C4:3/2`의 길이 표기는 파서가 구분한다.
 8. 공백과 탭은 토큰을 나눠 주지만 토큰 사이에 연결 연산이 숨어 있다. IDENT 두 개는 반드시 공백으로 띄어 써야 한다. `m1m1`은 하나의 IDENT이다.
 9. `//`부터 줄 끝까지는 주석이고 토큰을 만들지 않는다.
-10. NEWLINE은 문장의 끝을 뜻한다. `(` 또는 `[` 안에서는 NEWLINE을 만들지 않고, 연속된 줄바꿈은 하나로 합친다. 파일 맨 앞의 줄바꿈과 NEWLINE 바로 뒤의 줄바꿈은 건너뛴다. 입력의 마지막이 NEWLINE이 아니면 EOF 앞에 NEWLINE을 하나 넣는다. 이 NEWLINE은 괄호가 열려 있어도 낸다. 빈 입력은 EOF만 낸다.
+10. NEWLINE은 문장의 끝을 뜻한다. `(` 또는 `[` 안에서는 NEWLINE을 만들지 않고, 연속된 줄바꿈은 하나로 합친다. 파일 맨 앞의 줄바꿈과 NEWLINE 바로 뒤의 줄바꿈은 건너뛴다. 입력의 마지막이 NEWLINE이 아니면 EOF 앞에 NEWLINE을 하나 넣는다. 이 NEWLINE은 괄호가 열려 있어도 낸다. 토큰이 하나도 없는 입력(빈 파일, 공백과 주석뿐인 파일)은 E005이다.
 11. 위치는 줄과 열 모두 1부터 세고, 열은 문자 단위로 센다. 탭도 1열이다.
 12. 정수 리터럴은 0 이상 2^53 - 1 이하이다. 이보다 크면 E004이고 그 토큰은 버린다.
-13. 어느 규칙에도 맞지 않는 글자, H부터 Z로 시작하는 대문자 단어, `_a`처럼 `_` 뒤에 식별자 문자가 붙은 것은 E001이다. 오류가 난 부분은 버리고 다음 글자부터 계속 읽는다.
+13. 파일 맨 앞의 BOM은 버리고, `\r`은 공백으로 읽는다. 그래서 CRLF 파일도 같은 결과를 낸다. E001 메시지에서 출력할 수 없는 문자는 `U+0000` 꼴로 적는다.
+14. 어느 규칙에도 맞지 않는 글자, H부터 Z로 시작하는 대문자 단어, `_a`처럼 `_` 뒤에 식별자 문자가 붙은 것은 E001이다. 오류가 난 부분은 버리고 다음 글자부터 계속 읽는다.
 
 ### 구분 예시
 
@@ -98,7 +136,7 @@ Token {
 }
 ```
 
-렉서 오류는 E001(알 수 없는 문자), E002(잘못된 음 표기), E003(잘못된 음정 표기), E004(너무 큰 정수 리터럴)이다. 렉서는 오류를 보고한 뒤 해당 문자를 건너뛰고 스캔을 계속한다.
+렉서 오류는 E001(알 수 없는 문자), E002(잘못된 음 표기), E003(잘못된 음정 표기), E004(너무 큰 정수 리터럴), E005(빈 프로그램)이다. 렉서는 오류를 보고한 뒤 해당 문자를 건너뛰고 스캔을 계속한다.
 
 ## 문법
 
@@ -175,6 +213,8 @@ Length    -> COLON INT | COLON SLASH INT | COLON INT SLASH INT
 Args      -> ε | ArgList
 ArgList   -> Expr | ArgList COMMA Expr
 ```
+
+길이의 분자와 분모는 1 이상이어야 한다. `C4:0`과 `C4:/0`은 E012이다. 식의 AST 깊이가 500을 넘으면 E013이다. 두 검사가 없으면 0으로 나누기와 stack overflow가 컴파일러 고장(종료 코드 1)이 된다.
 
 `ERROR`는 렉서가 내지 않는 가상 터미널이고 오류 복구에만 쓴다. 이 문법은 LALR(1)이며 충돌이 없다. 우선순위는 `Par`, `Seq`, `Post`, `Atom`의 계층으로 문법에 들어 있다.
 
@@ -296,12 +336,12 @@ LALR(1) 표를 쓰는 LR 파서이다. 표는 위 BNF로 LR(1) 항목 집합을 
 
 | 단계                     | 입력            | 출력                         | 보고하는 오류                        |
 | ------------------------ | --------------- | ---------------------------- | ------------------------------------ |
-| 1. 렉서                  | 소스 문자열     | Token 목록                   | E001 부터 E003                       |
-| 2. 파서                  | Token 목록      | 파스 트리                    | E010, E011                           |
+| 1. 렉서                  | 소스 문자열     | Token 목록                   | E001 부터 E005                       |
+| 2. 파서                  | Token 목록      | 파스 트리                    | E002, E010 부터 E013                 |
 | 3. AST 구축              | 파스 트리       | AST                          | 없음                                 |
-| 4. 이름 해석과 타입 검사 | AST             | 타입이 붙은 AST, 심볼 테이블 | E101 부터 E104, E201 부터 E204, E401 |
+| 4. 이름 해석과 타입 검사 | AST             | 타입이 붙은 AST, 심볼 테이블 | E101 부터 E105, E201 부터 E204, E401 |
 | 5. AST 최적화            | 타입이 붙은 AST | 최적화된 AST                 | 없음                                 |
-| 6. 평가                  | 최적화된 AST    | 고수준 IR (HIR)              | E301 부터 E306, E402, E403           |
+| 6. 평가                  | 최적화된 AST    | 고수준 IR (HIR)              | E301 부터 E307, E402, E403           |
 | 7. HIR 최적화            | HIR             | 최적화된 HIR                 | 없음                                 |
 | 8. 하강                  | HIR             | 저수준 IR (LIR)              | 없음                                 |
 | 9. SMF 출력 (선택)       | LIR             | .mid 파일                    | 없음                                 |
@@ -374,9 +414,9 @@ Scope    : 함수 본문 안에서는 매개변수 목록을 전역보다 먼저
 | tables   | 악기표, 온음계 표 같은 상수                 |
 | rational | 유리수 연산                                 |
 
-### 단계별 출력 옵션
+### 단계별 출력
 
-각 단계의 결과를 텍스트로 출력하는 옵션 `--emit <단계>`를 둔다. 단계는 `tokens`, `parse`, `ast`, `typed`, `ast-opt`, `hir`, `hir-opt`, `ir`, `smf` 중 하나이다. 테스트는 입력 파일과 기대 출력 파일의 쌍으로 작성하고, 실제 출력과 문자열로 비교한다. 이 옵션은 단계별 출력을 검증해야 한다는 수업의 조건과 발표 시연에도 쓰인다.
+각 단계의 결과는 "실행 규약" 절의 `--phase`와 `--emit`으로 본다. 테스트는 입력 파일과 기대 출력 파일의 쌍으로 작성하고, 실제 출력과 문자열로 비교한다.
 
 ## 의미 분석
 
@@ -386,7 +426,7 @@ Scope    : 함수 본문 안에서는 매개변수 목록을 전역보다 먼저
 
 다음 순서로 진행한다.
 
-1. 헤더를 검사한다. 같은 종류의 헤더가 두 번 나오면 E102를 보고한다. `time`과 `unit`의 분자와 분모는 1 이상의 정수여야 한다.
+1. 헤더를 검사한다. 같은 종류의 헤더가 두 번 나오면 E102를 보고한다. `time`과 `unit`의 분자와 분모는 1 이상이고, `time`의 분모는 2의 거듭제곱이며, `tempo`는 4 이상 1000 이하여야 한다. 아니면 E105이다.
 2. 모든 `def`를 먼저 전역 이름 공간에 등록한다(호이스팅). 이름이 중복되면 E103이다.
 3. 각 `def` 본문에서 `Call` 노드를 모아 호출 그래프를 만들고, 깊이 우선 탐색으로 순환을 찾는다. 노드마다 미방문, 방문 중, 방문 완료 세 상태를 두고, 방문 중인 노드로 되돌아가는 간선을 발견하면 E401을 보고한다. 메시지에는 `f -> g -> f`처럼 순환 경로를 적는다.
 4. 문장을 위에서 아래로 처리한다. `Assign`은 우변을 검사한 뒤 이름을 등록한다. `Def`는 매개변수 스코프를 만들어 본문을 검사하고 반환 타입과 비교한다. `Track`은 우변을 검사하고 악기 이름을 확인한다.
@@ -504,6 +544,7 @@ C 장조의 C4 + 2d(반음 4개)와 A 단조의 A4 + 2d(반음 3개)가 같은 `
 
 - 함수 재귀를 금지한다(4단계의 호출 그래프 순환 검사).
 - 반복 횟수는 평가 결과가 1 이상의 정수여야 한다. 아니면 E402이다.
+- 함수 호출이 64단계보다 깊어지면 E403이다.
 - 평가 중 만들어진 이벤트의 총 수가 한도(기본 100000)를 넘으면 E403이다. 반복이 중첩되어 이벤트가 급증하는 입력을 막기 위한 규칙이다.
 - Int 값은 리터럴, 이름, 호출 인자로만 만들어지고 산술 연산이 없다. 따라서 반복 횟수는 평가 시점에 항상 확정된다.
 
@@ -578,7 +619,7 @@ SMF 출력기는 선택 사항이다. 구현한다면 LIR을 다음 규칙으로
 
 ### 텍스트 출력 형식
 
-골든 파일 테스트를 위해 `--emit hir`와 `--emit ir`의 출력 형식을 다음과 같이 고정한다.
+골든 파일 테스트를 위해 `--emit hir`와 `--phase ir`의 출력 형식을 다음과 같이 고정한다.
 
 ```
 // --emit hir
@@ -588,7 +629,7 @@ note 1/4 1/4 64
 rest 1/2 1/4
 note 3/4 1/4 64 tie
 
-// --emit ir
+// --phase ir
 ppq 480 tempo 120 time 4/4 key C major
 track piano channel 0
 0 0 60 480
@@ -713,25 +754,20 @@ track piano = up(m1) + 3d
 
 ### 출력 형식
 
-진단 하나는 다음 형식으로 출력한다. 줄과 열은 1부터 세고, 소스 줄과 위치 표시(^)를 함께 보여 준다.
+진단 하나는 한 줄이다. 줄과 열은 1부터 센다. 제안이 있으면 같은 줄 끝에 괄호로 붙인다.
 
 ```
-<파일>:<줄>:<열>: error[<코드>]: <메시지>
-  <줄 번호> | <소스 줄>
-           | <^ 표시>
-  help: <제안>
+<파일>:<줄>:<열>: error[<코드>]: <메시지> (<제안>)
 ```
 
 ```
-example.sc:1:18: error[E201]: operator '+' is not defined for (Note, Note)
-  1 | track piano = C4 + C4
-    |                  ^
-  help: expected (Note + Interval) or (Phrase + Interval)
+example.clef:1:18: error[E201]: operator '+' is not defined for (Note, Note) (expected (Note + Interval) or (Phrase + Interval))
 ```
 
-- 오류가 하나라도 있으면 종료 코드 1을 반환하고 LIR을 만들지 않는다. 경고만 있으면 종료 코드 0이다.
+- 오류가 하나라도 있으면 종료 코드 2를 반환하고 단계의 결과를 출력하지 않는다. 경고만 있으면 종료 코드 0이다.
 - 모든 진단은 출력 전에 (줄, 열) 오름차순으로 정렬한다. 같은 입력의 출력이 항상 같아야 테스트할 수 있다.
 - 진단(오류와 경고)은 정렬한 뒤 앞의 50개까지만 출력하고, 넘치면 마지막 줄에 `too many errors`를 출력한다.
+- 코드의 목록은 `docs/errors.md`에 싣는다. 그 문서의 모든 코드에는 그 코드를 내는 예제 프로그램이 있어야 하고, 테스트가 이를 확인한다.
 
 ### 오류 코드표
 
@@ -743,12 +779,16 @@ example.sc:1:18: error[E201]: operator '+' is not defined for (Note, Note)
 | E002 | 렉서, 파서  | 잘못된 음 표기(옥타브 없음, 두 자리 옥타브)                    | 토큰 시작                        |
 | E003 | 렉서        | 잘못된 음정 표기                                               | 토큰 시작                        |
 | E004 | 렉서        | 정수 리터럴이 너무 큼(2^53 - 1 초과)                           | 토큰 시작                        |
+| E005 | 렉서        | 빈 프로그램(토큰이 없음)                                       | 1:1                              |
 | E010 | 파서        | 예상하지 못한 토큰                                             | 그 토큰(줄 끝이면 줄 끝 다음 열) |
 | E011 | 파서        | 닫히지 않은 괄호                                               | 여는 괄호                        |
+| E012 | 파서        | 길이의 분자나 분모가 0                                         | 길이의 `:`                       |
+| E013 | 파서        | 중첩이 너무 깊음(AST 깊이 500 초과)                            | 한도를 넘긴 식의 시작            |
 | E101 | 이름 해석   | 정의되지 않은 이름                                             | 그 이름                          |
 | E102 | 이름 해석   | 같은 헤더를 두 번 씀                                           | 두 번째 헤더                     |
 | E103 | 이름 해석   | 이름을 다시 정의함                                             | 두 번째 정의의 이름              |
 | E104 | 이름 해석   | 악기표에 없는 악기 이름                                        | 그 이름                          |
+| E105 | 이름 해석   | 헤더 값이 범위를 벗어남                                        | 헤더 키워드                      |
 | E201 | 타입 검사   | 연산자의 피연산자 타입이 맞지 않음                             | 연산자                           |
 | E203 | 타입 검사   | 호출의 인자 개수 또는 타입이 맞지 않음                         | 함수 이름                        |
 | E204 | 타입 검사   | 함수 본문 타입이 반환 타입과 맞지 않음                         | 본문 식의 시작                   |
@@ -768,7 +808,7 @@ example.sc:1:18: error[E201]: operator '+' is not defined for (Note, Note)
 
 ### 메시지 작성 규칙
 
-- 메시지의 첫 문장은 무엇이 잘못됐는지, `help`는 어떻게 고치는지를 쓴다.
+- 메시지의 첫 부분은 무엇이 잘못됐는지, 괄호 안의 제안은 어떻게 고치는지를 쓴다.
 - 길이는 분수로 쓴다(3/4). 음은 소스에 쓴 그대로 쓴다(C4).
 - 이름 오류(E101, E104)에는 편집 거리가 2 이하이고 가장 가까운 이름 하나를 `did you mean 'm1'?` 형태로 제안한다.
 - 타입 오류가 난 식을 피연산자로 가진 식은 오류를 다시 보고하지 않는다.
@@ -782,11 +822,11 @@ example.sc:1:18: error[E201]: operator '+' is not defined for (Note, Note)
 | 이름 해석, 타입 검사 | 오류가 난 식의 타입을 오류 타입으로 둔다. 정의에 실패한 이름도 오류 타입으로 등록해 이후의 사용에서 E101이 반복되지 않게 한다                           |
 | 평가                 | 오류가 난 정의는 건너뛰고 다음 정의를 계속 평가한다. 오류가 난 정의를 쓰는 식은 조용히 건너뛴다                                                         |
 
-오류가 있으면 오류가 처음 발생한 단계까지만 결과를 출력한다. 예를 들어 파서에서 오류가 났다면 `--emit tokens`와 `--emit parse`는 출력하지만 `--emit ast`부터는 출력하지 않는다.
+요청한 단계까지 가는 도중에 오류가 있으면 진단만 출력한다. `--phase`보다 뒤 단계의 오류는 보고하지 않는다. 예를 들어 타입 오류만 있는 파일은 `--phase parse`에서 성공한다.
 
 ## 테스트 명세
 
-각 단계는 입력과 기대 출력을 쌍으로 고정해 단계별로 검증한다. 아래 예시는 모두 `time 4/4`, `key C`, `unit 1/4`, `tempo 120`이 기본값이라고 가정한다. 예시 안의 줄 번호와 열 번호는 1부터 센다. 진단의 정렬 순서는 줄, 열, 코드 순이다.
+각 단계는 입력과 기대 출력을 쌍으로 고정해 단계별로 검증한다. 진단 예시의 파일 이름은 `t.clef`이다. 아래 예시는 모두 `time 4/4`, `key C`, `unit 1/4`, `tempo 120`이 기본값이라고 가정한다. 예시 안의 줄 번호와 열 번호는 1부터 센다. 진단의 정렬 순서는 줄, 열, 코드 순이다.
 
 공통 프로그램 P는 다음과 같다.
 
@@ -798,46 +838,71 @@ m1 = C4 E4 G4 E4
 track piano = m1 m1+2d
 ```
 
-### 1단계: 렉서 (`--emit tokens`)
+### 1단계: 렉서 (`--phase lex`)
+
+토큰 하나를 `<줄>:<열> <종류> <원문>` 한 줄로 낸다. NEWLINE의 원문은 `\n`으로 적고 EOF는 출력하지 않는다.
 
 ```
 # 입력
 m1 = C#4 c4 E4:2~ |
 # 기대 출력
-IDENT(m1) EQ NOTE(C,#,4) IDENT(c4) NOTE(E,,4) COLON INT(2) TIE BAR NEWLINE
+1:1 IDENT m1
+1:4 EQ =
+1:6 NOTE C#4
+1:10 IDENT c4
+1:13 NOTE E4
+1:15 COLON :
+1:16 INT 2
+1:17 TIE ~
+1:19 BAR |
+1:20 NEWLINE \n
 
 # 입력
 time 4/4
 # 기대 출력
-KW_TIME INT(4) SLASH INT(4) NEWLINE
+1:1 KW_TIME time
+1:6 INT 4
+1:7 SLASH /
+1:8 INT 4
+1:9 NEWLINE \n
 
 # 입력
 m1+2d
 # 기대 출력
-IDENT(m1) PLUS INTERVAL(2,d) NEWLINE
+1:1 IDENT m1
+1:3 PLUS +
+1:4 INTERVAL 2d
+1:6 NEWLINE \n
 
 # 입력
 key C minor
 # 기대 출력
-KW_KEY PITCHCLASS(C) KW_MINOR NEWLINE
+1:1 KW_KEY key
+1:5 PITCHCLASS C
+1:7 KW_MINOR minor
+1:12 NEWLINE \n
 
 # 입력
 m1 = C10
 # 기대 출력
-1:6 error[E002]: invalid note 'C10': the octave must be a single digit
+t.clef:1:6: error[E002]: invalid note 'C10': the octave must be a single digit
 
 # 입력
 m1 = 2x
 # 기대 출력
-1:6 error[E003]: invalid interval '2x': use d (scale steps) or st (semitones)
+t.clef:1:6: error[E003]: invalid interval '2x': use d (scale steps) or st (semitones)
 
 # 입력
 m1 = ?
 # 기대 출력
-1:6 error[E001]: unexpected character '?'
+t.clef:1:6: error[E001]: unexpected character '?'
+
+# 입력 (빈 파일)
+# 기대 출력
+t.clef:1:1: error[E005]: this is not a valid program: the file is empty
 ```
 
-### 2단계: 파서 (`--emit parse`)
+### 2단계: 파서 (`--phase parse`)
 
 ```
 # 입력
@@ -857,24 +922,24 @@ TrackStmt
 track a = m1 +
 track b = * 2
 # 기대 출력
-1:15 error[E010]: expected expression after '+'
-2:11 error[E010]: expected expression, found '*'
+t.clef:1:15: error[E010]: expected expression after '+'
+t.clef:2:11: error[E010]: expected expression, found '*'
 
 # 입력
 m1 = (C4 E4
 # 기대 출력
-1:6 error[E011]: unclosed '('
+t.clef:1:6: error[E011]: unclosed '('
 
 # 입력
 m1 = C4 E
 # 기대 출력
-1:9 error[E002]: note 'E' needs an octave (for example E4)
+t.clef:1:9: error[E002]: note 'E' needs an octave (for example E4)
 
 # 입력
 m1 = C4
 time 3/4
 # 기대 출력
-2:1 error[E010]: unexpected 'time', headers must come before statements
+t.clef:2:1: error[E010]: unexpected 'time', headers must come before statements
 ```
 
 첫 번째 오류 예시처럼 한 문장에서 오류가 나도 다음 줄부터 다시 파싱하므로 두 오류가 모두 보고되어야 한다.
@@ -915,7 +980,7 @@ Assign(m1, Par(Seq[Var(a), Var(b)], Seq[Var(c), Var(d)]))
 
 AST에는 괄호와 중간 규칙 노드가 없고, 공백 연결은 평탄한 `Seq`이다.
 
-### 4단계: 이름 해석과 타입 검사 (`--emit typed`)
+### 4단계: 이름 해석과 타입 검사 (`--phase sema`)
 
 아래 기대 출력은 진단을 정렬한 순서로 적었다. 경고가 같이 나오는 입력은 경고를 함께 적었다.
 
@@ -929,59 +994,56 @@ track piano : Phrase
 m1 = C4:4
 track piano = m2
 # 기대 출력
-1:1 warning[W601]: 'm1' is defined but never used
-2:15 error[E101]: undefined name 'm2'
-	help: did you mean 'm1'?
+t.clef:1:1: warning[W601]: 'm1' is defined but never used
+t.clef:2:15: error[E101]: undefined name 'm2' (did you mean 'm1'?)
 
 # 입력
 time 4/4
 time 3/4
 track piano = C4:4
 # 기대 출력
-2:1 error[E102]: duplicate header 'time'
+t.clef:2:1: error[E102]: duplicate header 'time'
 
 # 입력
 m1 = C4:4
 m1 = D4:4
 track piano = m1
 # 기대 출력
-2:1 error[E103]: 'm1' is already defined at line 1
+t.clef:2:1: error[E103]: 'm1' is already defined at line 1
 
 # 입력
 track pino = C4:4
 # 기대 출력
-1:7 error[E104]: unknown instrument 'pino'
-	help: did you mean 'piano'?
+t.clef:1:7: error[E104]: unknown instrument 'pino' (did you mean 'piano'?)
 
 # 입력
 track piano = C4 + C4
 # 기대 출력
-1:18 error[E201]: operator '+' is not defined for (Note, Note)
-	help: expected (Note + Interval) or (Phrase + Interval)
+t.clef:1:18: error[E201]: operator '+' is not defined for (Note, Note) (expected (Note + Interval) or (Phrase + Interval))
 
 # 입력
 track piano = C4 2d
 # 기대 출력
-1:18 error[E201]: sequence items must be Note or Phrase, found Interval
+t.clef:1:18: error[E201]: sequence items must be Note or Phrase, found Interval
 
 # 입력
 def up(p: Phrase, i: Interval): Phrase = p + i
 track piano = up(C4)
 # 기대 출력
-2:15 error[E203]: 'up' expects 2 arguments, found 1
+t.clef:2:15: error[E203]: 'up' expects 2 arguments, found 1
 
 # 입력
 def f(p: Phrase): Interval = p
 track piano = C4:4
 # 기대 출력
-1:5 warning[W601]: 'f' is defined but never used
-1:30 error[E204]: function 'f' returns Interval, but its body has type Phrase
+t.clef:1:5: warning[W601]: 'f' is defined but never used
+t.clef:1:30: error[E204]: function 'f' returns Interval, but its body has type Phrase
 
 # 입력
 def f(p: Phrase): Phrase = f(p) p
 track piano = f(C4:4)
 # 기대 출력
-1:28 error[E401]: function 'f' is recursive (f -> f)
+t.clef:1:28: error[E401]: function 'f' is recursive (f -> f)
 ```
 
 ### 6단계: 평가 (`--emit hir`)
@@ -992,52 +1054,52 @@ track piano = f(C4:4)
 # 입력
 track piano = | C4 E4 G4 | C4 E4 G4 E4 C4 |
 # 기대 출력
-1:26 error[E301]: measure has length 3/4, expected 4/4 (missing 1/4)
-1:43 error[E301]: measure has length 5/4, expected 4/4 (1/4 too long)
+t.clef:1:26: error[E301]: measure has length 3/4, expected 4/4 (missing 1/4)
+t.clef:1:43: error[E301]: measure has length 5/4, expected 4/4 (1/4 too long)
 
 # 입력
 track piano = C4 E4 G4
 # 기대 출력
-1:15 error[E301]: track 'piano' has length 3/4, which is not a multiple of the measure length 4/4
+t.clef:1:15: error[E301]: track 'piano' has length 3/4, which is not a multiple of the measure length 4/4
 
 # 입력
 m1 = [C4 D4 E4 F4 G4 A4 B4]:1
 track piano = m1 C4:3
 # 기대 출력
-1:6 error[E302]: note length 1/28 is not representable at 480 ticks per quarter note
+t.clef:1:6: error[E302]: note length 1/28 is not representable at 480 ticks per quarter note
 
 # 입력
 track piano = C9:4
 # 기대 출력
-1:15 error[E303]: pitch C9 (120) is outside the range of piano (A0 to C8)
+t.clef:1:15: error[E303]: pitch C9 (120) is outside the range of piano (A0 to C8)
 
 # 입력
 track piano = C4~ D4 E4:2
 # 기대 출력
-1:15 error[E304]: tie from C4 has no matching note (the next note is D4)
+t.clef:1:15: error[E304]: tie from C4 has no matching note (the next note is D4)
 
 # 입력
 m1 = [C4 | D4 E4]:1
 track piano = m1 C4:3
 # 기대 출력
-1:10 error[E306]: bar lines are not allowed inside a group
+t.clef:1:10: error[E306]: bar lines are not allowed inside a group
 
 # 입력
 track piano = C#4:4 + 2d
 # 기대 출력
-1:21 error[E307]: pitch C#4 is not in the C major scale (use +2st instead)
+t.clef:1:21: error[E307]: pitch C#4 is not in the C major scale (use +2st instead)
 
 # 입력
 track piano = C4*0
 # 기대 출력
-1:18 error[E402]: repeat count must be an integer of at least 1, found 0
+t.clef:1:18: error[E402]: repeat count must be an integer of at least 1, found 0
 
 # 입력
 a = C4*1000
 b = a*1000
 track piano = b
 # 기대 출력
-2:5 error[E403]: expansion limit exceeded (more than 100000 events)
+t.clef:2:5: error[E403]: expansion limit exceeded (more than 100000 events)
 ```
 
 E305는 `track` 문장 16개를 쓴 입력으로 확인한다. 16번째 트랙의 이름 위치에 `error[E305]: too many tracks (at most 15)`가 나와야 한다.
@@ -1048,18 +1110,18 @@ E305는 `track` 문장 16개를 쓴 입력으로 확인한다. 16번째 트랙�
 # 입력
 m1 = C4
 # 기대 출력
-1:1 warning[W601]: 'm1' is defined but never used
-1:1 warning[W602]: no track is defined
+t.clef:1:1: warning[W601]: 'm1' is defined but never used
+t.clef:1:1: warning[W602]: no track is defined
 
 # 입력
 track piano = C4:4 & C4:2
 # 기대 출력
-1:20 warning[W603]: parallel phrases have different lengths (4/4 and 2/4), the shorter one is padded with a rest
+t.clef:1:20: warning[W603]: parallel phrases have different lengths (4/4 and 2/4), the shorter one is padded with a rest
 ```
 
-### 8단계: 저수준 IR (`--emit ir`)
+### 8단계: 저수준 IR (`--phase ir`)
 
-프로그램 P의 HIR과 LIR은 중간 표현 절의 예시와 같다. 아래 예시에서 헤더 줄 `ppq 480 tempo 120 time 4/4 key C major`는 생략했고, 헤더가 다른 입력에만 헤더를 적었다.
+프로그램 P의 HIR과 LIR은 중간 표현 절의 예시와 같다. 출력의 첫 줄은 항상 헤더 줄이다. 아래 예시에서는 기본값 헤더 줄 `ppq 480 tempo 120 time 4/4 key C major`를 생략했고, 헤더가 다른 입력에만 헤더를 적었다.
 
 ```
 # 입력: 묶음(셋잇단음표)
@@ -1195,7 +1257,7 @@ note 1/2 1/2 64
 track piano channel 0
 note 0 1/2 60
 note 1/2 1/2 64
-# 기대 출력 (--emit ir)
+# 기대 출력 (--phase ir)
 track piano channel 0
 0 0 60 960
 960 0 64 960
@@ -1211,7 +1273,7 @@ note 1/2 1/2 60
 track piano channel 0
 rest 0 1/2
 note 1/2 1/2 60
-# 기대 출력 (--emit ir)
+# 기대 출력 (--phase ir)
 track piano channel 0
 960 0 60 960
 ```
@@ -1228,14 +1290,14 @@ track piano channel 0
 
 ## 확인 사항
 
-가장 먼저 확인할 것은 제출 범위이다. 이 문서는 AST와 중간 표현까지를 기준으로 작성했고, MIDI 파일 출력기는 선택 항목으로 두었다.
+### 정해진 것
 
-### 교수님께 확인할 질문
+- 필수 범위는 lex, parse, sema, ir 네 단계이다. IR은 트리의 이름만 바꾼 것이면 인정되지 않는다. 실행되는 back end는 선택이고 가산점이 있을 수 있다.
 
-- [ ] 제출 범위가 AST와 중간 표현까지인가, 기계어 생성까지인가. 슬라이드에 miniC는 x86이나 ARM 출력까지라는 내용과 프론트엔드는 AST까지라는 내용이 따로 있어서 직접 정한 주제에 어느 쪽이 적용되는지 알 수 없다.
-- [ ] 슬라이드에서 강조된 modified intermediate form이 무엇을 뜻하는가. 기계 독립 최적화가 기대되는지, 최적화 단계가 필수인지.
-- [ ] DSL 주제에도 miniC와 같은 범위를 요구하는가. 중간 표현 이후 단계에 배점이 있는가.
-- [ ] MIDI 파일 출력기를 시연용으로 만들어도 되는가. 이 출력기를 기계어 생성에 해당하는 단계로 인정받을 수 있는가.
+### 확인할 것
+
+- [ ] 데모는 팀원 두 사람이 모두 말해야 한다. 팀 구성을 확인한다.
+- [ ] Conform 자동 채점이 어느 컴퓨터에서 `run.sh`를 실행하는가. 채점자의 컴퓨터라면 `vpx` 설치를 전제할 수 없다.
 
 ### 설계 결정 (임시 값)
 
@@ -1251,11 +1313,21 @@ track piano channel 0
 - 채널 9번(타악기)은 쓰지 않으므로 트랙은 최대 15개다.
 - 박자표 분모는 SMF 출력을 위해 2의 거듭제곱만 지원한다.
 
-### 시연 후보
+### 데모
 
-코드로 쓴 곡을 컴파일해 MIDI 파일로 만들고 재생하는 시연을 한다. 재생은 컴파일러 범위 밖이므로 MIDI 재생 프로그램(예: FluidSynth나 운영체제 기본 플레이어)을 쓴다.
+Zoom으로 10분이고 코드 설명은 GitHub 저장소 화면으로 한다. 시작 전에 터미널, GitHub, `docs` 폴더를 열어 두고, 데모 중에는 아무것도 설치하지 않는다. 되지 않는 기능이 있으면 시작할 때 먼저 말한다.
 
-- 곡은 저작권이 소멸한 클래식 곡 중에서 고른다. 같은 선율이 시차를 두고 겹치는 파헬벨의 카논(D장조)이 이 언어의 기능을 보여주기에 좋다.
-- 선율은 `def`와 변수로 정의하고, 겹치는 성부는 `&`, 이조는 `+`, 반복은 `*`로 쓴다.
-- 시연 순서는 소스 보여주기, `--emit tokens`부터 `--emit ir`까지 단계별 출력, 오류가 있는 소스의 진단 출력, `.mid` 파일 재생 순으로 한다.
-- 이 시연은 SMF 출력기를 구현했을 때만 가능하다.
+| 시간(분) | 하는 일                                                                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 0 ~ 1    | 언어의 목적과 작은 프로그램 하나                                                                                         |
+| 1 ~ 2    | `--phase lex`                                                                                                            |
+| 2 ~ 4    | `--phase parse`. `m1+2d*2`와 `a b & c d`로 우선순위를 보인다                                                             |
+| 4 ~ 6    | `docs/errors.md`를 보인 뒤 오류 프로그램 3개                                                                             |
+| 6 ~ 8    | `--phase ir`. 한 줄을 설명하고, 트리에 없는 일(함수 인라이닝, 온음계 이조 계산, 정수 틱 변환, 붙임줄 병합)을 하나 말한다 |
+| 8 ~ 9    | 현장에서 받은 테스트 실행                                                                                                |
+| 9 ~ 10   | 코드와 AI 사용에 대한 질문. 팀원마다 따로 답한다                                                                         |
+
+- 단계마다 쉬움, 중간, 오류 테스트를 하나씩 `examples/demo/<단계>/`에 둔다. 현장에서 처음 보는 테스트가 2개 더 온다.
+- `docs/AI_USAGE.md`는 한 쪽이고 다섯 항목이다. 사용한 AI 도구와 단계, AI가 도움이 된 예, AI가 틀린 예와 대응, 테스트 방법(직접 쓴 것과 생성한 것), 줄 단위로 설명할 수 있는 파일 2개. 실제 경험을 팀원이 직접 쓴다.
+- 예상 질문은 "이름이 선언됐는지 검사하는 파일 설명", "키워드를 하나 더할 때 고치는 파일과 순서", "AI가 틀리게 쓴 부분"이다.
+- SMF 출력기를 구현했으면 마지막에 `.mid`를 만들어 재생한다. 곡은 저작권이 소멸한 파헬벨의 카논이다.

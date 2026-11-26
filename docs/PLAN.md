@@ -44,17 +44,18 @@
 | 6    | 문법 자료구조와 FIRST                        | `grammar/grammar.ts`, `grammar/first.ts`                                             | 110줄 |
 | 7    | LR(1) 항목, LALR 표, 충돌 보고               | `grammar/lr1.ts`, `grammar/lalr.ts`, `grammar/table.ts`                              | 200줄 |
 | 8    | LR 구동기와 파스 트리                        | `grammar/lr-driver.ts`                                                               | 100줄 |
-| 9    | Clef 문법 연결, `--emit parse` (이정표 2)    | `parser/clef-grammar.ts`, `parser/terminals.ts`, `parser/parser.ts`, `emit/parse.ts` | 180줄 |
+| 9    | Clef 문법 연결, `--phase parse` (이정표 2)   | `parser/clef-grammar.ts`, `parser/terminals.ts`, `parser/parser.ts`, `emit/parse.ts` | 180줄 |
 | 10   | 오류 복구와 E010, E011, E002                 | `grammar/lr-driver.ts`, `parser/errors.ts`                                           | 110줄 |
 | 11   | SDT로 AST 생성                               | `parser/actions.ts`, `ast/ast.ts`, `common/rational.ts`                              | 250줄 |
 | 12   | 검사기와 심볼 테이블                         | `check/checker.ts`                                                                   | 300줄 |
 | 13   | 평가기와 HIR (이정표 3)                      | `eval/*`                                                                             | 450줄 |
 | 14   | LIR 변환                                     | `lower/lowerer.ts`                                                                   | 90줄  |
 | 15   | 최적화                                       | `opt/*`                                                                              | 250줄 |
-| 16   | 파이프라인, CLI, `--emit` (이정표 4)         | `pipeline.ts`, `cli/main.ts`                                                         | 150줄 |
-| 17   | SMF 출력, 웹 시연                            | `smf/writer.ts`, `web/*`                                                             | 선택  |
+| 16   | 파이프라인, CLI, `run.sh` (이정표 4)         | `pipeline.ts`, `cli/main.ts`                                                         | 150줄 |
+| 17   | SMF 출력(선택), 웹 시연(선택)                | `smf/writer.ts`, `web/*`                                                             | 선택  |
+| 18   | 제출 문서와 데모 자료                        | `docs/errors.md`, `docs/AI_USAGE.md`, `examples/demo/`                               |       |
 
-단계 17만 선택이다. 나머지는 모두 파이프라인에 필요하다.
+단계 17만 선택이다. 나머지는 모두 파이프라인이나 제출에 필요하다. `run.sh`와 종료 코드 처리(CLI 절)는 단계 5 뒤에 `--phase lex`부터 붙이고, 단계마다 `--phase`를 늘린다. 웹 시연을 만들지 않으면 `src/web`, `index.html`, `codemirror`, `@codemirror/lint`, `tone`을 지운다. 쓰지 않는 코드는 감점이다.
 
 ### 수업 내용과의 대응
 
@@ -71,17 +72,18 @@
 | shift, reduce 구동 알고리즘                       | 8             | 파스 트리 출력                                                  |
 | 파서의 오류 처리(패닉 모드, 오류 생산)            | 10            | 여러 줄의 오류를 한 번에 보고                                   |
 | SDT, 속성(synthesized, inherited), S-속성, L-속성 | 11, 12, 13    | AST 생성 동작, 타입 속성, 시작 시각 속성                        |
-| 심볼 테이블                                       | 12            | `--emit typed`                                                  |
-| IR, 3주소 코드                                    | 14            | `--emit ir`과 3주소 코드의 대응                                 |
+| 심볼 테이블                                       | 12            | `--phase sema`                                                  |
+| IR, 3주소 코드                                    | 14            | `--phase ir`과 3주소 코드의 대응                                |
 | 기본 블록, 지역 최적화, DAG 공통 부분식 제거      | 15            | `--emit ast-opt`, `--emit hir-opt`                              |
 
 ### 현재 상태
 
-- 완료: `common/span.ts`, `diagnostics/diagnostic.ts`, `lexer/token.ts`(토큰 클래스와 `format()`)
-- 일부: `music/pitch.ts`는 `Letter`, `Accidental`, `Mode` 타입만 있다.
+- 완료: `common/span.ts`, `common/rational.ts`, `diagnostics/diagnostic.ts`, `music/pitch.ts`, `music/instruments.ts`, `automata/charset.ts`, `automata/regex.ts`, `lexer/token.ts`
+- 고칠 것: `diagnostics/diagnostic.ts`는 한 줄 형식 하나만 남기고(`formatFull` 삭제) 새 코드(E005, E012, E013, E105)를 더한다. `token.ts`의 `format()`은 `<줄>:<열> <종류> <원문>`으로 바꾼다. `cli/main.ts`의 임시 종료 코드도 CLI 절에 맞춘다.
+
 - 비어 있음: `lexer/lexer.ts`, 그 밖의 모든 모듈
 
-`token.ts`는 그대로 쓴다. 이 문서의 렉서는 `Token` 클래스를 만드는 방법만 바꾸고 토큰 자체는 바꾸지 않는다. `PunctKind`에 `CALL_LP`를 추가하지 않는다. 호출과 나열의 구분은 `LPAREN`과 `spaceBefore`로 충분하다(결정 2). `KEYWORDS` 맵은 단계 4에서 키워드 규칙을 만드는 데 그대로 쓴다.
+`token.ts`의 클래스는 그대로 쓴다. 이 문서의 렉서는 `Token` 클래스를 만드는 방법만 바꾸고 토큰 자체는 바꾸지 않는다. `PunctKind`에 `CALL_LP`를 추가하지 않는다. 호출과 나열의 구분은 `LPAREN`과 `spaceBefore`로 충분하다(결정 2). `KEYWORDS` 맵은 단계 4에서 키워드 규칙을 만드는 데 그대로 쓴다.
 
 ## 프로젝트 설정
 
@@ -163,18 +165,18 @@ export default defineConfig({
 
 아래 라이브러리는 모두 처음부터 설치해 둔다.
 
-| 라이브러리                       | 쓰는 단계 | 쓰는 곳                                                                                                                                                                                                                                                                                                                                                                  |
-| -------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ts-pattern`                     | 전체      | 여러 경우로 갈라지는 분기는 `switch` 대신 `match`로 쓴다. 유니온의 모든 멤버를 처리해야 하면 `.exhaustive()`, 나머지를 한꺼번에 처리해도 되면 `.otherwise()`를 쓴다. 검사기의 연산자 규칙(`match([l, r]).with(['Note', 'Interval'], …)`)처럼 두 값의 짝을 보는 분기에도 쓴다. AST, HIR, LIR의 `kind` 분기는 새 멤버가 생기면 컴파일 오류가 나도록 `.exhaustive()`를 쓴다 |
-| `es-toolkit`                     | 전체      | `groupBy`(붙임줄 검사의 `byStart`), `uniqBy`(진단 중복 제거), `sortBy`, `sumBy`, `range` 같은 컬렉션 도우미                                                                                                                                                                                                                                                              |
-| `picocolors`                     | 9단계     | CLI 진단 출력의 색                                                                                                                                                                                                                                                                                                                                                       |
-| `@tonejs/midi`                   | 10단계    | Vitest 안에서 `.mid`를 읽어 검증한다. SMF 기록기를 직접 짜지 않고 이것으로 대신해도 된다(채점 대상이 아니다)                                                                                                                                                                                                                                                             |
-| `codemirror`, `@codemirror/lint` | 11단계    | 웹 시연의 입력창. lint 확장으로 진단 위치에 밑줄을 긋는다                                                                                                                                                                                                                                                                                                                |
-| `tone`                           | 11단계    | 웹 시연의 재생                                                                                                                                                                                                                                                                                                                                                           |
+| 라이브러리   | 쓰는 단계 | 쓰는 곳                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ts-pattern` | 전체      | 여러 경우로 갈라지는 분기는 `switch` 대신 `match`로 쓴다. 유니온의 모든 멤버를 처리해야 하면 `.exhaustive()`, 나머지를 한꺼번에 처리해도 되면 `.otherwise()`를 쓴다. 검사기의 연산자 규칙(`match([l, r]).with(['Note', 'Interval'], …)`)처럼 두 값의 짝을 보는 분기에도 쓴다. AST, HIR, LIR의 `kind` 분기는 새 멤버가 생기면 컴파일 오류가 나도록 `.exhaustive()`를 쓴다 |
+| `es-toolkit` | 전체      | `groupBy`(붙임줄 검사의 `byStart`), `uniqBy`(진단 중복 제거), `sortBy`, `sumBy`, `range` 같은 컬렉션 도우미                                                                                                                                                                                                                                                              |
+
+| `@tonejs/midi` | 10단계 | Vitest 안에서 `.mid`를 읽어 검증한다. SMF 기록기를 직접 짜지 않고 이것으로 대신해도 된다(채점 대상이 아니다) |
+| `codemirror`, `@codemirror/lint` | 11단계 | 웹 시연의 입력창. lint 확장으로 진단 위치에 밑줄을 긋는다 |
+| `tone` | 11단계 | 웹 시연의 재생 |
 
 개발 의존성은 `fast-check`, `@types/node`와 Vite+이다. `tone`과 `codemirror`는 DOM이 필요하므로 `src/web`에서만 쓴다. `src/core`에서 쓰면 CLI가 같은 코드를 쓰지 못한다.
 
-쓰지 않기로 한 것도 적어 둔다. `zod`는 검증할 구조화된 외부 입력이 없어서 쓰지 않는다. 입력은 `.clef` 텍스트뿐이고 그 검증이 곧 파서의 일이다. CLI 인수 파싱 라이브러리는 옵션이 세 개뿐이라 `node:util`의 `parseArgs`로 충분하다.
+쓰지 않기로 한 것도 적어 둔다. `zod`는 검증할 구조화된 외부 입력이 없어서 쓰지 않는다. 입력은 `.clef` 텍스트뿐이고 그 검증이 곧 파서의 일이다. CLI 인수 파싱 라이브러리는 옵션이 네 개뿐이라 `node:util`의 `parseArgs`로 충분하다.
 
 ## 폴더 구조
 
@@ -182,13 +184,16 @@ export default defineConfig({
 
 ```text
 clef/
+├─ run.sh                         채점 진입점. `--phase lex|parse|sema|ir <파일>`
+├─ docs/                          SPEC.md, PLAN.md, errors.md, AI_USAGE.md
 ├─ index.html                     시연 앱 진입점 (Vite 규칙: 프로젝트 루트)
 ├─ vite.config.ts
 ├─ tsconfig.json
 ├─ package.json
 ├─ examples/
 │  ├─ program-p.clef              스펙 전체에서 쓰는 공통 프로그램 P
-│  └─ canon.clef                  파헬벨 카논 (시연용)
+│  ├─ canon.clef                  파헬벨 카논 (시연용)
+│  └─ demo/                       lex, parse, sema, ir마다 easy, medium, error
 ├─ src/
 │  ├─ core/                       컴파일러 본체. DOM과 파일 시스템에 의존하지 않는다
 │  │  ├─ common/
@@ -236,7 +241,7 @@ clef/
 │  │  ├─ pipeline.ts              Compiler (퍼사드)
 │  │  └─ index.ts                 공개 API: Compiler, SourceFile, 타입들
 │  ├─ cli/
-│  │  └─ main.ts                  clef <파일> [--emit 단계] [-O0] [-o 출력.mid]
+│  │  └─ main.ts                  clef --phase <단계> <파일> (CLI 절)
 │  └─ web/
 │     ├─ main.ts                  입력창, 단계 탭, 진단 표시
 │     └─ player.ts                LIR을 틱에서 초로 바꿔 재생
@@ -297,8 +302,7 @@ classDiagram
     +capped() CappedDiagnostics
   }
   class Diagnostic {
-    +format() string
-    +formatFull(file) string
+    +format(fileName) string
   }
   class Lexer {
     +tokenize() Token[]
@@ -512,13 +516,12 @@ export function maxRational(a: Rational, b: Rational): Rational {
 
 진단은 `DiagnosticBag` 하나에 모은다. 출력 전에 `sorted()`를 거치며, 같은 코드와 위치와 메시지는 하나로 합치고 (줄, 열, 코드) 순으로 정렬한다. 자르지는 않는다. 출력하는 쪽이 `capped()`로 앞의 50개와 넘친 개수를 받고, 넘쳤으면 마지막 줄에 `too many errors`를 붙인다. 50개는 경고를 포함한 진단 전체의 수이다(SPEC을 따른다). 중복 제거가 필요한 이유는 인라이닝 때문이다. 인수 식이 본문에 복제되면 같은 오류가 두 번 나올 수 있고, `-O0`과 같은 출력을 내려면 합쳐야 한다.
 
-`Diagnostic.format()`은 골든 테스트가 쓰는 `줄:열 종류[코드]: 메시지` 형식이고 `help`는 줄을 바꾸고 탭 하나로 들여 쓴다. `Diagnostic.formatFull(file)`은 CLI가 쓰는 소스 줄과 밑줄이 있는 형식이다. 출력 함수는 따로 두지 않고 `Diagnostic`과 `DiagnosticBag`의 메서드로 둔다.
+`Diagnostic.format(fileName)` 하나만 둔다. 결과는 `<파일>:<줄>:<열>: <종류>[<코드>]: <메시지>` 한 줄이고 `help`가 있으면 ` (help)`를 같은 줄에 붙인다. 채점 규약이 오류마다 한 줄을 요구하므로 소스 줄과 밑줄은 출력하지 않는다.
 
 `src/core/diagnostics/diagnostic.ts`
 
 ```ts
 import type { Span } from '../common/span.ts';
-import type { SourceFile } from '../common/span.ts';
 
 export type Severity = 'error' | 'warning';
 
@@ -527,12 +530,16 @@ export type DiagCode =
   | 'E002'
   | 'E003'
   | 'E004'
+  | 'E005'
   | 'E010'
   | 'E011'
+  | 'E012'
+  | 'E013'
   | 'E101'
   | 'E102'
   | 'E103'
   | 'E104'
+  | 'E105'
   | 'E201'
   | 'E203'
   | 'E204'
@@ -559,25 +566,10 @@ export class Diagnostic {
     readonly help?: string | undefined,
   ) {}
 
-  /** 골든 테스트용 짧은 형식. 예: "1:21 error[E307]: ..." */
-  format(): string {
-    const head = `${this.span.line}:${this.span.col} ${this.severity}[${this.code}]: ${this.message}`;
-    return this.help ? `${head}\n\thelp: ${this.help}` : head;
-  }
-
-  /** CLI용 전체 형식. 소스 줄과 밑줄을 함께 보여 준다. */
-  formatFull(file: SourceFile): string {
-    const { line, col, endCol } = this.span;
-    const gutter = String(line);
-    const pad = ' '.repeat(gutter.length);
-    const underline = ' '.repeat(col - 1) + '^'.repeat(Math.max(1, endCol - col));
-    const out = [
-      `${file.name}:${line}:${col}: ${this.severity}[${this.code}]: ${this.message}`,
-      `${gutter} | ${file.lineText(line)}`,
-      `${pad} | ${underline}`,
-    ];
-    if (this.help) out.push(`${pad} = help: ${this.help}`);
-    return out.join('\n');
+  /** 예: "t.clef:1:21: error[E307]: ... (use +2st instead)" */
+  format(fileName: string): string {
+    const head = `${fileName}:${this.span.line}:${this.span.col}: ${this.severity}[${this.code}]: ${this.message}`;
+    return this.help ? `${head} (${this.help})` : head;
   }
 }
 
@@ -767,11 +759,11 @@ export class Instrument {
 
 렉서는 토큰 규칙을 정규식으로 적고 Thompson 구성과 부분집합 구성으로 DFA를 만들어 쓴다. 이 절의 단계 1 ~ 5가 그 설계와 구현 순서이다. 앞부분은 다른 모듈이 알아야 하는 것이다.
 
-- 토큰은 `src/core/lexer/token.ts`의 클래스(`NoteToken`, `PitchClassToken`, `IdentToken`, `IntToken`, `IntervalToken`, `SimpleToken`)이다. 공통 필드는 `lexeme`, `span`, `spaceBefore`이고 `format()`이 `--emit tokens`의 한 토큰을 낸다.
+- 토큰은 `src/core/lexer/token.ts`의 클래스(`NoteToken`, `PitchClassToken`, `IdentToken`, `IntToken`, `IntervalToken`, `SimpleToken`)이다. 공통 필드는 `lexeme`, `span`, `spaceBefore`이고 `format()`이 `--phase lex`의 한 토큰을 낸다.
 - `spaceBefore`는 `f(m1)`(호출)과 `f (m1)`(나열)을 파서가 구분하는 유일한 근거이다. 렉서는 두 경우 모두 `LPAREN`을 낸다.
 - `KEYWORDS` 맵은 키워드 규칙을 만드는 입력이다.
 - 공개 메서드는 `Lexer.tokenize(): Token[]` 하나이다. 내부는 `lexer/rules.ts`의 규칙표, `lexer/scanner.ts`의 DFA 스캐너, `lexer/lexer.ts`의 후처리(spaceBefore, 괄호 깊이, NEWLINE)로 나뉜다.
-- E001 ~ E003은 가장 낮은 우선순위의 오류 규칙이 보고한다. 오류가 난 부분은 버리고 계속 읽는다.
+- E001 ~ E004는 가장 낮은 우선순위의 오류 규칙이 보고한다. 오류가 난 부분은 버리고 계속 읽는다.
 - 검증 입력은 스펙의 1단계 예시이고, 추가 입력은 단계 4와 5의 시험 표이다.
 
 ### 단계 1: 문자 집합과 정규식 AST
@@ -1051,7 +1043,9 @@ SPEC의 1단계 입력과 아래 추가 입력을 이 스캐너로 돌린다(후
 1. **spaceBefore**: 직전에 WS나 COMMENT가 있었으면 다음 토큰의 `spaceBefore`를 `true`로 한다.
 2. **괄호 깊이**: `LPAREN`, `LBRACKET`을 만나면 깊이를 1 올리고, `RPAREN`, `RBRACKET`을 만나면 깊이가 0보다 클 때만 1 내린다. 깊이가 0일 때 나온 닫는 괄호는 그대로 파서에 넘긴다.
 3. **NEWLINE**: 깊이가 0보다 크면 버린다. 깊이가 0이면 직전 토큰이 NEWLINE이거나 아직 토큰이 없는 경우를 제외하고 낸다.
-4. **EOF**: 마지막 토큰이 NEWLINE이 아니면 깊이와 관계없이 NEWLINE을 먼저 낸다. 열린 괄호가 남은 채로 입력이 끝나도 파서가 "문장 끝에서의 오류"로 볼 수 있어야 E011을 낼 수 있다.
+4. **빈 입력**: 토큰이 하나도 없고 다른 렉서 오류도 없으면 1:1에 E005 `this is not a valid program: the file is empty`를 보고한다.
+5. **BOM**: `U+FEFF`가 맨 앞에 있으면 스캔 전에 버린다. `\r`은 WS 규칙이 처리한다.
+6. **EOF**: 마지막 토큰이 NEWLINE이 아니면 깊이와 관계없이 NEWLINE을 먼저 낸다. 열린 괄호가 남은 채로 입력이 끝나도 파서가 "문장 끝에서의 오류"로 볼 수 있어야 E011을 낼 수 있다.
 
 #### 오류 보고
 
@@ -1063,6 +1057,8 @@ SPEC의 1단계 입력과 아래 추가 입력을 이 스캐너로 돌린다(후
 | INT 리터럴이 `Number.MAX_SAFE_INTEGER`를 넘음 | E004 | `integer literal too large: '99999999999999999999'`                                       | 토큰 시작      |
 | BAD_WORD, BAD_REST, 맞는 규칙이 없는 글자     | E001 | `unexpected character '?'` 또는 `unexpected word 'Foo'`                                   | 그 글자나 단어 |
 
+E001 메시지의 출력할 수 없는 문자는 `U+0000` 꼴로 적는다.
+
 오류가 난 토큰은 버리고 계속 읽는다. 토큰 열에서 오류 토큰은 빠지지만 진단은 남는다. 렉서에 오류가 있으면 이후 단계를 돌리지 않는다(결정 6).
 
 닫히지 않은 괄호(E011)는 렉서가 아니라 파서가 보고한다(결정 5).
@@ -1073,7 +1069,7 @@ SPEC의 1단계 입력과 아래 추가 입력을 이 스캐너로 돌린다(후
 
 #### 이정표 1
 
-SPEC의 1단계 테스트 7개가 모두 통과하고, `tests/golden/lexer/`에 `.clef`와 `.expected` 쌍을 둔다. `Lexer`의 공개 메서드는 `tokenize(): Token[]`이다. 내부가 DFA 표로 바뀌었을 뿐 호출하는 쪽은 달라지지 않는다. `canon.clef`와 `program-p.clef`를 토큰화해 오류가 없는지도 본다.
+SPEC의 1단계 테스트 8개가 모두 통과하고, `tests/golden/lexer/`에 `.clef`와 `.expected` 쌍을 둔다. `Lexer`의 공개 메서드는 `tokenize(): Token[]`이다. 내부가 DFA 표로 바뀌었을 뿐 호출하는 쪽은 달라지지 않는다. `canon.clef`와 `program-p.clef`를 토큰화해 오류가 없는지도 본다.
 
 ### 문법
 
@@ -1132,7 +1128,7 @@ Clef 문법으로 LR(1) 항목 집합을 만든 뒤 core가 같은 상태를 합
 파서는 직접 만든 LALR(1) 표와 LR 구동기를 쓴다. 문법은 위 문법 절의 BNF이고, 이 절의 단계 6 ~ 10이 설계와 구현 순서이다.
 
 - `grammar/*`는 Clef를 모르는 범용 코드이다. 문법, FIRST, LR(1) 항목, LALR 표, 표를 읽는 구동기가 들어 있다. `parser/*`가 Clef의 BNF와 오류 진단, reduce 동작을 담는다.
-- `Parser`는 생성자에서 `(tokens, bag)`을 받고 `parseAst(): Program`과 `parseTree(): ParseTree`를 낸다. 둘은 같은 구동기에 다른 의미 동작을 넣은 것이다. `parseTree`는 `--emit parse`에만 쓰고 진단은 버린다.
+- `Parser`는 생성자에서 `(tokens, bag)`을 받고 `parseAst(): Program`과 `parseTree(): ParseTree`를 낸다. 둘은 같은 구동기에 다른 의미 동작을 넣은 것이다. `parseTree`는 `--phase parse`에만 쓰고 진단은 버린다.
 - 구문 트리 타입(CST)과 `AstBuilder`는 없다. 괄호 제거와 연산자 노드 변환은 reduce 동작이 한다(단계 11).
 - 호출과 나열의 구분은 `parser/terminals.ts`의 `terminalOf`가 한다.
 - 오류 복구는 `Line -> ERROR NEWLINE` 생산과 패닉 모드이다. 헤더 순서(E010)와 닫히지 않은 괄호(E011)는 결정 4, 5를 따른다. `ParseAbort` 예외는 쓰지 않는다.
@@ -1334,7 +1330,7 @@ loop:
 
 수업 노트의 식 문법을 쓴다. `E -> E + T | T`, `T -> T * F | F`, `F -> ( E ) | id` 문법에서 `id * id + id`가 받아들여지고, reduce 순서가 파스 트리의 후위 순회와 같은지 본다. 스택 추적을 문자열로 출력하는 `trace` 옵션을 켜서 수업 노트의 표(스택, 남은 입력, 동작)와 눈으로 비교한다.
 
-### 단계 9: Clef 문법 연결, `--emit parse`
+### 단계 9: Clef 문법 연결, `--phase parse`
 
 #### 목표
 
@@ -1373,7 +1369,7 @@ TrackStmt
          +- Atom -> INTERVAL 2d
 ```
 
-추가로 `canon.clef`, `program-p.clef`, `f(m1) f (m1)`(호출과 나열), `[C4 D4]:1`, `C4:/2 D4:3/2`, `a b & c d`를 파싱해 본다. `f(m1)`은 `IDENT CALL_LP`로, `f (m1)`은 `IDENT LPAREN`로 나뉘어 서로 다른 트리가 나와야 한다. 두 입력의 `--emit tokens` 결과는 `spaceBefore`만 다르고 둘 다 `LPAREN`이다.
+추가로 `canon.clef`, `program-p.clef`, `f(m1) f (m1)`(호출과 나열), `[C4 D4]:1`, `C4:/2 D4:3/2`, `a b & c d`를 파싱해 본다. `f(m1)`은 `IDENT CALL_LP`로, `f (m1)`은 `IDENT LPAREN`로 나뉘어 서로 다른 트리가 나와야 한다. 두 입력의 `--phase lex` 결과는 `spaceBefore`만 다르고 둘 다 `LPAREN`이다.
 
 ### 단계 10: 오류 복구
 
@@ -1624,17 +1620,19 @@ AST는 파서의 reduce 동작(`parser/actions.ts`)이 생산마다 바로 만�
 
 이 표의 값들이 SPEC의 3단계 예시(`Seq[Var(m1), Transpose(Var(m1), +2d)]`, `Group(Seq[...], 1)`, `Repeat(Transpose(Var(a), +2d), 2)`)와 일치하는지 확인한다.
 
-`parser/parser.ts`의 `Parser.parseProgram()`은 이제 이렇게 두 번 구동기를 부른다. 한 번은 `ParseTree` 의미 동작으로 `--emit parse`용 트리를, 한 번은 AST 의미 동작으로 AST를 만든다. 입력 토큰이 같고 구동이 빠르므로 두 번 돌려도 비용은 문제가 없다. 파서에 오류가 있었으면 AST 단계는 돌리지 않는다.
+`Length` 동작은 분자나 분모가 0이면 `Rational`을 만들기 전에 E012를 보고한다. `Rational.of`가 던지는 예외가 밖으로 나가면 종료 코드 1이 되기 때문이다. 식 노드를 만드는 동작은 자식의 최대 깊이에 1을 더해 두고 500을 넘으면 E013을 보고한다. AST를 재귀로 훑는 뒤 단계가 stack overflow를 내지 않게 하는 한도이다. 파스 트리 출력기가 재귀하기 전에도 같은 한도가 적용되어야 한다.
+
+`parser/parser.ts`의 `Parser.parseProgram()`은 이제 이렇게 두 번 구동기를 부른다. 한 번은 `ParseTree` 의미 동작으로 `--phase parse`용 트리를, 한 번은 AST 의미 동작으로 AST를 만든다. 입력 토큰이 같고 구동이 빠르므로 두 번 돌려도 비용은 문제가 없다. 파서에 오류가 있었으면 AST 단계는 돌리지 않는다.
 
 #### 시험
 
-SPEC의 3단계 입력 6개의 `--emit ast` 출력이 SPEC과 같고, 오류가 있는 줄은 빠진다. 헤더 값 검사(박자표 분모가 2의 거듭제곱인지, 0이 아닌지)는 `Header` 동작에서 한다. 오류 코드는 SPEC과 대조해 정한다.
+SPEC의 3단계 입력 6개의 `--emit ast` 출력이 SPEC과 같고, 오류가 있는 줄은 빠진다. 헤더 값의 범위 검사(E105)는 검사기가 한다.
 
 ### 검사기
 
 `Checker`는 4단계이다. 하는 일은 순서대로 다음과 같다.
 
-1. 헤더를 확정한다. 기본값은 4/4, C 장조, 템포 120, 단위 1/4이다. 같은 헤더가 두 번 나오면 E102이다.
+1. 헤더를 확정한다. 기본값은 4/4, C 장조, 템포 120, 단위 1/4이다. 같은 헤더가 두 번 나오면 E102이고, 값이 SPEC의 범위를 벗어나면 E105이다.
 2. 함수를 모두 먼저 등록한다. 함수는 선언 위치와 무관하게 호출할 수 있다. 이름 충돌은 E103이다.
 3. 문장을 순서대로 검사한다. 변수는 선언 뒤에서만 쓸 수 있고 함수는 어디서든 호출한다. 본문의 타입은 `typeOf`가 계산한다.
 4. 호출 그래프에서 순환을 찾고(E401), 쓰이지 않은 정의(W601)와 트랙이 없음(W602)을 경고한다.
@@ -1904,7 +1902,7 @@ export function formatLength(r: Rational, timeDen: number): string {
 
 - 대입 문장은 선언 순서대로 평가하고 값을 환경에 넣는다. 함수 정의는 호출될 때만 평가하므로 쓰이지 않은 함수 본문의 오류는 나오지 않는다.
 - 문장 하나에서 오류가 나면 `EvalAbort`로 그 문장을 포기하고, 대입이면 이름을 `POISON`으로 표시한다. 이후 그 이름을 쓰는 문장은 조용히 포기하므로 같은 원인의 오류가 연쇄하지 않는다.
-- 함수 호출은 새 환경(부모는 전역)에서 본문을 평가한다. 재귀는 검사기가 이미 막았으므로 깊이 제한(64)은 내부 안전장치이다.
+- 함수 호출은 새 환경(부모는 전역)에서 본문을 평가한다. 재귀는 검사기가 막지만 함수를 길게 이어 부를 수는 있으므로, 깊이가 64를 넘으면 E403을 보고한다. 일반 `Error`를 던지지 않는다.
 - 길이는 `음표 길이 배수 * unit`이다. 기본 `unit`이 1/4이므로 `C4:4`는 온음표 하나이다. 틱으로 정확히 나누어떨어지지 않으면 E302이다.
 - 진단과 로그의 길이는 박자표 분모를 기준으로 쓴다(`formatLength`). 4/4에서 온음표는 `4/4`, 3/4박자의 한 마디는 `3/4`이다. 나누어떨어지지 않으면 `1/28`처럼 분수 그대로 쓴다.
 
@@ -2603,10 +2601,12 @@ import { Parser } from './parser/parser.ts';
 import { MidiWriter } from './smf/writer.ts';
 
 export interface CompileOptions {
+  /** 이 단계까지만 실행한다. 뒤 단계의 진단은 나오지 않는다. */
+  readonly until: 'lex' | 'parse' | 'sema' | 'ir';
   readonly optLevel: OptLevel;
   /** true이면 마지막에 .mid 바이트까지 만든다. */
   readonly smf: boolean;
-  /** true이면 `--emit parse`를 위해 파스 트리도 만든다. */
+  /** true이면 `--phase parse`를 위해 파스 트리도 만든다. */
   readonly parseTree: boolean;
 }
 
@@ -2646,14 +2646,14 @@ export class Compiler {
     });
 
     const tokens = new Lexer(file, bag).tokenize();
-    if (bag.hasErrors()) return done({ tokens });
+    if (bag.hasErrors() || options.until === 'lex') return done({ tokens });
 
     const parser = new Parser(tokens, bag);
     const ast = parser.parseAst();
     // 같은 토큰을 다른 의미 동작으로 한 번 더 구동한다. 진단은 첫 구동에서 이미 모았다.
     const parseTree = options.parseTree ? parser.parseTree() : undefined;
     const base = { tokens, ...(parseTree ? { parseTree } : {}) };
-    if (bag.hasErrors()) return done(base);
+    if (bag.hasErrors() || options.until === 'parse') return done(base);
 
     const checked = new Checker(ast, bag).check();
     if (bag.hasErrors()) return done({ ...base, ast, checked });
@@ -2661,6 +2661,8 @@ export class Compiler {
     const astOpt = this.astPasses.run(ast, options.optLevel);
     const hir = new Evaluator(astOpt, checked.header, bag).evaluate();
     if (bag.hasErrors()) return done({ ...base, ast, checked, astOpt, hir });
+
+    if (options.until === 'sema') return done({ ...base, ast, checked, astOpt, hir });
 
     const hirOpt = this.hirPasses.run(hir, options.optLevel);
     const lir = new Lowerer().lower(hirOpt);
@@ -2672,19 +2674,19 @@ export class Compiler {
 
 오류 전파는 이렇다. 렉서와 파서는 각각 오류가 있어도 끝까지 돌아 여러 오류를 모은다. 렉서에 오류가 있으면 파서를 돌리지 않고, 파서에 오류가 있으면 AST 이후를 만들지 않는다. 검사기에 오류가 있으면 평가하지 않는다. 평가기에 오류가 있으면 HIR 최적화와 변환을 하지 않는다. 경고는 단계를 멈추지 않는다. 스펙의 오류 전파 규칙과 다르면 스펙을 따른다.
 
-`--emit` 단계와 `CompileResult` 필드의 대응은 다음과 같다.
+출력 단계와 `CompileResult` 필드의 대응은 다음과 같다. `tokens`, `parse`, `typed`, `ir`는 각각 `--phase lex`, `parse`, `sema`, `ir`이고 나머지는 `--emit`이다.
 
-| `--emit`  | 필드               | 출력기                                    |
-| --------- | ------------------ | ----------------------------------------- |
-| `tokens`  | `tokens`           | `emit/tokens.ts` (`formatToken`을 줄마다) |
-| `parse`   | `parseTree`        | `emit/parse.ts`                           |
-| `ast`     | `ast`              | `emit/ast.ts`                             |
-| `typed`   | `checked.bindings` | `emit/typed.ts` (`이름 : 타입`)           |
-| `ast-opt` | `astOpt`           | `emit/ast.ts`                             |
-| `hir`     | `hir`              | `emit/hir.ts`                             |
-| `hir-opt` | `hirOpt`           | `emit/hir.ts`                             |
-| `ir`      | `lir`              | `lower/lowerer.ts`의 `formatLir`          |
-| `smf`     | `smf`              | 바이트를 파일로 저장                      |
+| `--emit`     | 필드               | 출력기                                                      |
+| ------------ | ------------------ | ----------------------------------------------------------- |
+| `tokens`     | `tokens`           | `emit/tokens.ts` (토큰마다 `<줄>:<열> <종류> <원문>` 한 줄) |
+| `parse`      | `parseTree`        | `emit/parse.ts`                                             |
+| `ast`        | `ast`              | `emit/ast.ts`                                               |
+| `typed`      | `checked.bindings` | `emit/typed.ts` (`이름 : 타입`)                             |
+| `ast-opt`    | `astOpt`           | `emit/ast.ts`                                               |
+| `hir`        | `hir`              | `emit/hir.ts`                                               |
+| `hir-opt`    | `hirOpt`           | `emit/hir.ts`                                               |
+| `ir`         | `lir`              | `lower/lowerer.ts`의 `formatLir`                            |
+| `smf` (`-o`) | `smf`              | 바이트를 파일로 저장                                        |
 
 HIR 출력기는 아래와 같다. 스펙의 HIR 예시(`C4~ C4 E4:2`, `_ _ C4:2`의 병합 전과 후)와 같은 출력이 나오는 것을 확인했다.
 
@@ -2712,17 +2714,20 @@ export function formatHir(hir: HirProgram): string {
 
 파스 트리, AST, 타입 출력기의 정확한 문자열은 스펙의 해당 절과 골든 파일이 정한다. 이 문서는 어느 모듈이 맡는지만 정한다.
 
-### 단계 16: 파이프라인, CLI, `--emit`
+### 단계 16: 파이프라인, CLI, `run.sh`
 
 파이프라인 절의 `Compiler`와 CLI 절의 명령을 만든다. 파스에는 LALR 표를 쓴다.
 
-| 옵션                                                               | 출력               |
-| ------------------------------------------------------------------ | ------------------ |
-| `--emit tokens\|parse\|ast\|typed\|ast-opt\|hir\|hir-opt\|ir\|smf` | SPEC의 단계별 출력 |
-
 #### 이정표 4
 
-`vp run clef examples/canon.clef --emit ir`가 단계 14의 출력을 낸다. 오류가 있는 파일은 오류가 처음 난 단계까지만 출력하고 종료 코드 1을 낸다.
+`./run.sh --phase ir examples/canon.clef`가 단계 14의 출력을 내고 종료 코드 0이다. 오류가 있는 파일은 진단만 내고 종료 코드 2이다. 빈 파일과 임의 바이트 파일도 2이다.
+
+### 단계 18: 제출 문서와 데모 자료
+
+- `docs/errors.md`: 모든 `DiagCode`의 코드, 뜻, 그 코드를 내는 예제. 예제는 `tests/golden/errors/<코드>.clef`이고, 테스트가 `DiagCode`마다 파일이 있고 그 코드가 나오는지 확인한다.
+- `docs/AI_USAGE.md`: SPEC의 데모 절에 적은 다섯 항목. 팀원이 직접 쓴다.
+- `examples/demo/<lex|parse|sema|ir>/`: `easy`, `medium`, `error` 하나씩.
+- 제출 전에 dead code와 쓰지 않는 의존성을 지우고, 새로 클론한 폴더에서 `run.sh`를 실행해 본다.
 
 ## 진단 위치 규칙
 
@@ -2730,9 +2735,13 @@ export function formatHir(hir: HirProgram): string {
 
 | 코드        | 가리키는 곳                                       | 예                                 |
 | ----------- | ------------------------------------------------- | ---------------------------------- |
-| E001 ~ E003 | 문제가 된 문자나 단어의 시작                      | `m1 = C10` 은 1:6                  |
+| E001 ~ E004 | 문제가 된 문자나 단어의 시작                      | `m1 = C10` 은 1:6                  |
+| E005        | 파일 처음                                         | 1:1                                |
+| E012        | 길이의 `:`                                        | `m1 = C4:0` 은 1:8                 |
+| E013        | 한도를 넘긴 식의 시작                             |                                    |
+| E105        | 헤더 키워드                                       | `tempo 0` 은 1:1                   |
 | E010        | 기대와 다른 토큰                                  | `m1 = C4 +` 은 1:10                |
-| E011        | 위치가 어긋난 헤더 키워드                         | 2:1                                |
+| E011        | 가장 안쪽에서 열린 괄호                           | `m1 = (C4 E4` 는 1:6               |
 | E101        | 정의되지 않은 이름 토큰                           | `track piano = m2` 는 1:15         |
 | E102        | 두 번째 헤더 키워드                               | 2:1                                |
 | E103        | 다시 정의된 이름                                  | 2:1                                |
@@ -2761,9 +2770,8 @@ export function formatHir(hir: HirProgram): string {
 
 ```text
 E002  invalid note 'C10': the octave must be a single digit
-E101  undefined name 'm2'            help: did you mean 'm1'?
-E201  operator '+' is not defined for (Note, Note)
-      help: expected (Note + Interval) or (Phrase + Interval)
+E101  undefined name 'm2' (did you mean 'm1'?)
+E201  operator '+' is not defined for (Note, Note) (expected (Note + Interval) or (Phrase + Interval))
 E301  measure has length 3/4, expected 4/4 (missing 1/4)
 E301  measure has length 5/4, expected 4/4 (1/4 too long)
 E301  track 'piano' has length 3/4, which is not a multiple of the measure length 4/4
@@ -2779,20 +2787,23 @@ W603  parallel phrases have different lengths (4/4 and 2/4), the shorter one is 
 
 ### 구성
 
-| 종류      | 위치                     | 대상                                                              | 방식                                           |
-| --------- | ------------------------ | ----------------------------------------------------------------- | ---------------------------------------------- |
-| 단위      | `tests/unit`             | `Rational`, `diatonicShift`, `resolveTies`, `vlq`, `formatLength` | 값 비교                                        |
-| 단위      | `tests/unit/automata`    | `CharSet`, `thompson`, `subsetConstruct`                          | 교과서 예제의 상태 수, JS 정규식 오라클과 비교 |
-| 단위      | `tests/unit/grammar`     | FIRST, 항목 집합, LALR 표, 구동기                                 | 단계 7의 시험 문법 6개의 상태 수와 충돌 수     |
-| 골든      | `tests/golden/<단계>`    | 각 단계의 출력과 진단                                             | `.clef` 입력과 `.expected` 비교                |
-| 속성      | `tests/property`         | DFA와 정규식 일치, 최적화 전후 동일성, 정렬, 길이                 | `fast-check`로 임의 프로그램 생성              |
-| 끝에서 끝 | `tests/unit/smf.test.ts` | `.mid` 바이트                                                     | 헤더와 이벤트 바이트 비교                      |
+| 종류      | 위치                     | 대상                                                              | 방식                                                                     |
+| --------- | ------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| 단위      | `tests/unit`             | `Rational`, `diatonicShift`, `resolveTies`, `vlq`, `formatLength` | 값 비교                                                                  |
+| 단위      | `tests/unit/automata`    | `CharSet`, `thompson`, `subsetConstruct`                          | 교과서 예제의 상태 수, JS 정규식 오라클과 비교                           |
+| 단위      | `tests/unit/grammar`     | FIRST, 항목 집합, LALR 표, 구동기                                 | 단계 7의 시험 문법 6개의 상태 수와 충돌 수                               |
+| 골든      | `tests/golden/<단계>`    | 각 단계의 출력과 진단                                             | `.clef` 입력과 `.expected` 비교                                          |
+| 속성      | `tests/property`         | DFA와 정규식 일치, 최적화 전후 동일성, 정렬, 길이                 | `fast-check`로 임의 프로그램 생성                                        |
+| 끝에서 끝 | `tests/unit/smf.test.ts` | `.mid` 바이트                                                     | 헤더와 이벤트 바이트 비교                                                |
+| 끝에서 끝 | `tests/unit/cli.test.ts` | `run.sh`의 종료 코드와 출력                                       | 정상, 오류, 빈 파일, 임의 바이트, CRLF, `C4:/0`, 괄호 10000겹, 없는 파일 |
+| 속성      | `tests/property`         | 임의 문자열에 컴파일러가 예외를 던지지 않음                       | `fast-check`                                                             |
+| 골든      | `tests/golden/errors`    | `DiagCode`마다 예제 하나                                          | 그 코드가 나오는지 확인                                                  |
 
 ### 골든 러너
 
-진단을 출력하는 단계의 기대 파일은 `bag.capped()`의 `shown`을 `Diagnostic.format()`으로 쓰고, `hidden`이 0보다 크면 마지막 줄에 `too many errors`를 넣는다.
+진단을 출력하는 단계의 기대 파일은 `bag.capped()`의 `shown`을 `Diagnostic.format(파일 이름)`으로 쓰고, `hidden`이 0보다 크면 마지막 줄에 `too many errors`를 넣는다.
 
-골든 파일은 한 쌍이다. 입력은 `이름.clef`, 기대 출력은 `이름.expected`이다. 러너는 폴더 이름(단계)에 따라 컴파일러를 해당 단계까지 돌려 출력기로 문자열을 만들고 비교한다. 오류 테스트는 `Diagnostic.format()`으로 진단을 이어 붙인 문자열이 기대 출력이다. `UPDATE_GOLDEN=1`이면 비교 대신 기대 파일을 덮어써서 첫 작성이 빠르다. 덮어쓴 뒤에는 반드시 눈으로 확인하고 스펙과 대조한다.
+골든 파일은 한 쌍이다. 입력은 `이름.clef`, 기대 출력은 `이름.expected`이다. 러너는 폴더 이름(단계)에 따라 컴파일러를 해당 단계까지 돌려 출력기로 문자열을 만들고 비교한다. 오류 테스트는 `Diagnostic.format(파일 이름)`으로 진단을 이어 붙인 문자열이 기대 출력이다. `UPDATE_GOLDEN=1`이면 비교 대신 기대 파일을 덮어써서 첫 작성이 빠르다. 덮어쓴 뒤에는 반드시 눈으로 확인하고 스펙과 대조한다.
 
 ```ts
 // tests/golden/golden.test.ts 골격
@@ -2811,7 +2822,12 @@ for (const stage of STAGES) {
       const src = readFileSync(join(dir, file), 'utf8');
       const actual = renderStage(
         stage,
-        new Compiler().compile(new SourceFile(file, src), { optLevel: 1, smf: false }),
+        new Compiler().compile(new SourceFile(file, src), {
+          until: 'ir',
+          optLevel: 1,
+          smf: false,
+          parseTree: stage === 'parser',
+        }),
       );
       const expectedPath = join(dir, file.replace(/\.clef$/, '.expected'));
       if (process.env.UPDATE_GOLDEN || !existsSync(expectedPath))
@@ -2828,7 +2844,7 @@ for (const stage of STAGES) {
 
 아래 입력과 출력은 참조 구현에서 모두 일치한 값이다. 골든 파일의 첫 묶음으로 그대로 쓸 수 있다. `\n`은 줄바꿈이고 헤더는 생략하면 기본값(4/4, C 장조, 120, 단위 1/4)이다.
 
-저수준 IR(`--emit ir`)이다.
+저수준 IR(`--phase ir`)이다.
 
 ```text
 time 4/4\nkey C\n\nm1 = C4 E4 G4 E4\ntrack piano = m1 m1+2d
@@ -2898,50 +2914,46 @@ def g(p: Phrase): Phrase = p p / track piano = g(C#4:4 + 2d)   E307 한 번 (중
 
 ### CLI
 
-사용법은 `clef <파일> [--emit 단계] [-O0] [-o 출력.mid]`이다. 동작은 다음과 같다.
+채점 규약은 SPEC의 "실행 규약" 절이 정한다. 사용법은 `./run.sh (--phase lex|parse|sema|ir | --emit ast|ast-opt|hir|hir-opt) [-O0] [-o 출력.mid] <파일>`이다.
 
-- 진단은 모두 `Diagnostic.formatFull(file)`로 표준 오류에 출력한다.
-- `--emit`이 있으면 해당 단계 출력을 표준 출력에 쓴다. 없으면 `-o`가 있을 때 `.mid`를 쓰고, 둘 다 없으면 진단만 출력한다.
-- 종료 코드는 성공 0, 소스 오류 1, 사용법 오류 2이다.
-- `-O0`은 `optLevel: 0`이다.
+`run.sh`
+
+```sh
+#!/bin/sh
+exec vpx "$(dirname "$0")/src/cli/main.ts" "$@"
+```
+
+- 실행 권한을 커밋한다(`git update-index --chmod=+x run.sh`). `vpx`가 다른 글을 출력하지 않는지 새 클론에서 확인한다.
+- 결과는 표준 출력, 진단은 표준 에러에 한 줄씩 쓴다.
+- 종료 코드는 성공 0, 소스 오류, 읽기 실패, 사용법 오류 2, 컴파일러 고장 1이다.
+- `-O0`은 `optLevel: 0`이다. `-O`에 값 `0`이 붙은 짧은 옵션으로 읽힌다.
 
 ```ts
 // src/cli/main.ts 골격
-import { readFileSync, writeFileSync } from 'node:fs';
-import { parseArgs } from 'node:util';
-import { Compiler, SourceFile } from '../core/index.ts';
-
-const { values, positionals } = parseArgs({
-  allowPositionals: true,
-  options: {
-    emit: { type: 'string' },
-    opt: { type: 'string', short: 'O' },
-    o: { type: 'string' },
-  },
-});
-const path = positionals[0];
-if (path === undefined) {
-  console.error('usage: clef <file> [--emit stage] [-O0] [-o out.mid]');
-  process.exit(2);
+function main(): number {
+  // parseArgs와 readFileSync의 실패는 여기에서 잡아 'clef: ...' 한 줄과 2를 돌려준다.
+  // 그다음 Compiler.compile을 부른다.
+  const { shown, hidden } = result.diagnostics;
+  for (const d of shown) console.error(d.format(path));
+  if (hidden > 0) console.error('too many errors');
+  if (!result.ok) return 2;
+  // 단계에 맞는 emit/* 출력기로 표준 출력에 쓰고, -o가 있으면 .mid를 쓴다.
+  return 0;
 }
-const file = new SourceFile(path, readFileSync(path, 'utf8'));
-const result = new Compiler().compile(file, {
-  optLevel: values.opt === '0' ? 0 : 1,
-  smf: values.o !== undefined,
-});
-const { shown, hidden } = result.diagnostics;
-for (const d of shown) console.error(d.formatFull(file));
-if (hidden > 0) console.error('too many errors');
-// values.emit 에 따라 emit/* 출력기를 골라 console.log 한다.
-if (values.o !== undefined && result.smf) writeFileSync(values.o, result.smf);
-process.exit(result.ok ? 0 : 1);
+
+try {
+  process.exitCode = main();
+} catch (e) {
+  console.error(`clef: internal compiler error: ${e instanceof Error ? e.message : String(e)}`);
+  process.exitCode = 1;
+}
 ```
 
-`-O0`은 짧은 옵션 `-O`에 값 `0`이 붙은 형태로 읽힌다. `opt`를 `short: 'O'`인 문자열 옵션으로 정의하면 `parseArgs`가 `values.opt === '0'`으로 돌려준다. Node 24에서 `a.clef -O0 --emit ir -o x.mid`로 확인했다.
+`process.exit()`는 파이프로 보낸 출력이 잘릴 수 있으므로 `process.exitCode`를 쓴다.
 
 ### 웹 시연
 
-화면은 왼쪽에 소스 입력, 오른쪽에 단계 탭(tokens, parse, ast, typed, ast-opt, hir, hir-opt, ir)과 진단 목록으로 구성한다. 입력이 바뀔 때마다 `Compiler.compile`을 부르고 선택된 탭의 출력기 결과를 보여 준다. 진단의 줄:열은 입력창의 밑줄로 표시한다. 오류가 있는 소스를 보여 주며 단계별 출력이 어디서 멈추는지 보이면 오류 처리 점수(10점)를 설명하기 쉽다.
+화면은 왼쪽에 소스 입력, 오른쪽에 단계 탭(tokens, parse, ast, typed, ast-opt, hir, hir-opt, ir)과 진단 목록으로 구성한다. 입력이 바뀔 때마다 `Compiler.compile`을 부르고 선택된 탭의 출력기 결과를 보여 준다. 진단의 줄:열은 입력창의 밑줄로 표시한다. 오류가 있는 소스를 보여 주며 단계별 출력이 어디서 멈추는지 보여 준다.
 
 재생은 LIR에서 바로 한다. 틱을 초로 바꾸는 식은 `초 = 틱 / 480 * 60 / 템포`이다. 이 값으로 `Tone.js`의 `PolySynth`에 `triggerAttackRelease(주파수, 길이, 시작)`을 예약한다. 주파수는 `440 * 2^((MIDI - 69) / 12)`이다. `.mid` 다운로드 버튼은 `smf: true`로 컴파일한 바이트를 `Blob`으로 내려받게 한다.
 
@@ -2967,7 +2979,7 @@ track flute  = _:16 theme
 track piano  = _:24 (theme - 7d)
 ```
 
-컴파일 결과는 4트랙이다. 첼로 24개 음, 바이올린 16개, 플루트 8개, 피아노 8개이고, 템포 66에서 약 43.6초 길이이다. 아래 표는 `--emit ir` 출력의 요약이다.
+컴파일 결과는 4트랙이다. 첼로 24개 음, 바이올린 16개, 플루트 8개, 피아노 8개이고, 템포 66에서 약 43.6초 길이이다. 아래 표는 `--phase ir` 출력의 요약이다.
 
 | 트랙   | 채널 | 이벤트 | 끝 틱 | 진입 시점              |
 | ------ | ---- | ------ | ----- | ---------------------- |
@@ -2998,13 +3010,13 @@ track piano  = _:24 (theme - 7d)
 | 박자표 분모              | 2의 거듭제곱만                                                                                                                                                                                                                                                    | SMF의 박자표 메타가 `log2`를 쓴다                                                                                                                                                                                                                                                                                                                                                                         |
 | E010, E011 문구          | 참조 구현의 문구는 임시                                                                                                                                                                                                                                           | 스펙의 오류표 문구가 있으면 그것을 쓴다                                                                                                                                                                                                                                                                                                                                                                   |
 | 오류 전파                | 각 단계는 끝까지 돌아 오류를 모으고, 오류가 있으면 다음 단계를 돌리지 않는다(결정 6)                                                                                                                                                                              | 스펙의 오류 전파 규칙과 대조                                                                                                                                                                                                                                                                                                                                                                              |
-| 헤더 출력                | `--emit ir`와 `hir`에 헤더 줄을 넣을지는 스펙 형식을 따른다                                                                                                                                                                                                       | 참조 구현은 헤더 줄 없이 트랙만 출력한다                                                                                                                                                                                                                                                                                                                                                                  |
-| 결정 1. NEWLINE 만들기   | NEWLINE은 파일 맨 앞과 다른 NEWLINE 바로 뒤에서는 만들지 않는다. 마지막 토큰이 NEWLINE이 아니면 EOF 앞에 NEWLINE을 하나 넣는다. 빈 파일은 EOF만 낸다.                                                                                                             | 문법이 빈 줄을 따로 다루지 않아도 된다. PLAN.md의 "항상 NEWLINE을 넣는다"는 빈 줄에서 NEWLINE이 연달아 나온다.                                                                                                                                                                                                                                                                                            |
-| 결정 2. 호출과 나열      | 공백 없이 IDENT에 붙은 `(`도 렉서는 `LPAREN`으로 낸다. 파서가 터미널을 고를 때 `CALL_LP`로 바꿔 읽는다(`parser/terminals.ts`의 `terminalOf`).                                                                                                                     | `token.ts`는 이미 `LPAREN` 주석에 "앞에 공백이 없으면 호출"이라고 적고 `spaceBefore`를 갖고 있다. 렉서가 `CALL_LP`를 새로 내면 토큰 정의를 고쳐야 하고, 직전 토큰을 보는 문맥 검사가 렉서 후처리에 들어간다. 터미널 변환은 파서 쪽 함수 하나로 끝난다. `--emit tokens`에는 둘 다 `LPAREN`으로 나온다.                                                                                                     |
+| 헤더 출력                | `--phase ir`는 헤더 줄을 항상 출력하고 `--emit hir`는 트랙만 출력한다                                                                                                                                                                                             | SPEC의 실행 규약                                                                                                                                                                                                                                                                                                                                                                                          |
+| 결정 1. NEWLINE 만들기   | NEWLINE은 파일 맨 앞과 다른 NEWLINE 바로 뒤에서는 만들지 않는다. 마지막 토큰이 NEWLINE이 아니면 EOF 앞에 NEWLINE을 하나 넣는다. 빈 파일은 E005이다.                                                                                                               | 문법이 빈 줄을 따로 다루지 않아도 된다. PLAN.md의 "항상 NEWLINE을 넣는다"는 빈 줄에서 NEWLINE이 연달아 나온다.                                                                                                                                                                                                                                                                                            |
+| 결정 2. 호출과 나열      | 공백 없이 IDENT에 붙은 `(`도 렉서는 `LPAREN`으로 낸다. 파서가 터미널을 고를 때 `CALL_LP`로 바꿔 읽는다(`parser/terminals.ts`의 `terminalOf`).                                                                                                                     | `token.ts`는 이미 `LPAREN` 주석에 "앞에 공백이 없으면 호출"이라고 적고 `spaceBefore`를 갖고 있다. 렉서가 `CALL_LP`를 새로 내면 토큰 정의를 고쳐야 하고, 직전 토큰을 보는 문맥 검사가 렉서 후처리에 들어간다. 터미널 변환은 파서 쪽 함수 하나로 끝난다. `--phase lex`에는 둘 다 `LPAREN`으로 나온다.                                                                                                       |
 | 결정 3. 음 표기 오류     | `C10`, `C4x`, `Cx`, `Foo`처럼 A부터 G로 시작하는 단어가 음이 아니면 E002이다. `Hello`처럼 H부터 Z로 시작하는 대문자 단어와 `_a`는 E001, `2dx`는 E003이다.                                                                                                         | SPEC 규칙 1이 "A부터 G로 시작하는 단어에 식별자 문자가 붙으면 E002"라고 정한다. 이전 계획은 `Cx`와 `Foo`를 E001로 두어 SPEC과 어긋났다. 오류 규칙은 가장 낮은 우선순위의 정규식으로 둔다(단계 4).                                                                                                                                                                                                         |
 | 결정 4. 헤더 순서        | "헤더는 문장보다 앞에 온다"는 문법이 아니라 `Line` 생산의 의미 동작으로 검사한다. 위반하면 E010이고 그 헤더 줄은 버린다.                                                                                                                                          | 헤더 구간과 문장 구간을 문법에서 나누고 `error` 생산을 넣으면 LALR 표에서 shift/reduce 충돌이 1개 생기는 것을 확인했다. 줄 단위 문법에서는 충돌이 없다.                                                                                                                                                                                                                                                   |
 | 결정 5. E011             | 닫히지 않은 괄호(E011)는 SPEC 오류 코드표대로 파서 단계의 오류로 둔다. 파서가 마지막 NEWLINE 또는 EOF에서 구문 오류를 만났고 열린 괄호가 남아 있으면, E010 대신 가장 안쪽에서 열린 괄호의 위치에 E011을 낸다. 줄 맨 앞의 키워드로 괄호를 끊는 규칙은 두지 않는다. | SPEC 표에서 E011의 단계는 "파서"이고 위치는 "여는 괄호"이다. 이전 계획의 키워드 규칙은 SPEC 예시 하나에서 일반화한 것이라 근거가 없었다. 대가가 있다. 닫히지 않은 괄호 뒤의 줄은 모두 그 괄호 안으로 들어가므로 그 뒤 문장의 오류는 보고되지 않는다. 이는 SPEC의 "괄호 깊이가 0인 첫 NEWLINE까지" 동기화 규칙과 일치한다. 여러 괄호가 열려 있을 때 어느 것을 가리킬지는 SPEC에 없어 가장 안쪽으로 정했다. |
-| 결정 6. 렉서 오류와 파서 | 렉서에 오류가 있으면 파서를 돌리지 않는다.                                                                                                                                                                                                                        | SPEC의 "오류가 처음 발생한 단계까지만 출력". `m1 = C10`에서 E002만 나와야 한다.                                                                                                                                                                                                                                                                                                                           |
+| 결정 6. 렉서 오류와 파서 | 렉서에 오류가 있으면 파서를 돌리지 않는다.                                                                                                                                                                                                                        | SPEC의 오류 전파 규칙. `m1 = C10`에서 E002만 나와야 한다.                                                                                                                                                                                                                                                                                                                                                 |
 | 정수 리터럴 상한         | 2^53 - 1을 넘으면 E004. `IntToken.value`는 `number`이다                                                                                                                                                                                                           | 범위를 넘는 리터럴을 오류로 하는 것은 C도 같다. 틱, 박자, 반복 횟수가 이 범위를 넘을 일이 없어서 BigInt를 쓰면 모든 소비처에 변환만 늘어난다                                                                                                                                                                                                                                                              |
 
 ## 확인하지 못한 항목
@@ -3012,9 +3024,9 @@ track piano  = _:24 (theme - 7d)
 - Vite+는 이 환경에서 직접 실행해 보지 못했다. 명령, 설정 키, 테스트 import 경로는 1.7.0 문서 기준으로 적었다. 공식 README와 가이드의 내용으로 적었으므로 `vp help`와 `vp create`가 만든 샘플로 다시 확인한다.
 - 린트 규칙 세부(예: `switch` 완전성 검사의 타입 인식 규칙)는 적지 않았다. 분기의 완전성은 `match(...).exhaustive()`와 반환 타입 검사로 보장되고 `vp check`의 타입 검사가 잡는다.
 - 이 문서의 렉서와 파서 절, 파이프라인 코드의 수정한 부분은 타입 검사를 하지 않았다. 구현하면서 확인한다.
-- 웹 시연(`Tone.js` 재생, 입력창 밑줄)과 CLI의 `--emit` 분기는 설계만 했고 실행하지 않았다.
+- 웹 시연(`Tone.js` 재생, 입력창 밑줄)과 CLI의 출력 단계 분기는 설계만 했고 실행하지 않았다.
 - 파스 트리, AST, 타입 출력기의 문자열 형식은 스펙의 예시를 따르며 이 문서에서 검증하지 않았다.
-- 수업이 요구하는 산출물 범위(중간 표현까지인지, 기계어에 해당하는 출력까지인지)는 교수님 확인이 필요하다. 스펙의 확인 사항에 질문으로 들어 있다.
+- `vpx`가 설치되지 않은 컴퓨터에서 Conform 자동 채점이 돌아가는지 확인하지 못했다(SPEC의 확인할 것).
 - 이 문서의 상태 수, 충돌 수, 토큰 열은 Python 임시 구현으로 계산했다. TypeScript로 구현한 결과가 다르면 어느 쪽이 틀렸는지 확인한다. 특히 충돌 수는 (상태, 터미널) 칸 단위로 센 값이다.
 - 단계 10의 오류 메시지 선택 규칙은 SPEC 예시에서 일반화한 것이다. E011이 여러 열린 괄호 중 가장 안쪽을 가리킨다는 점도 SPEC에 없어 정한 것이다. SPEC의 예시가 더 있으면 대조해야 한다.
 - 단계 9의 파스 트리 출력 형식(`TrackStmt` 같은 이름, `->` 사슬)은 SPEC 예시 하나에서 읽은 규칙이다. 다른 문장 종류의 출력 형식은 SPEC에 없다.
